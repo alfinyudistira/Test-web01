@@ -1,32 +1,79 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    /* ========== TARGET & RUNTIME ========== */
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "skipLibCheck": true,
     "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "types": ["vite/client", "@testing-library/jest-dom"],
+
+    /* ========== STRICT MODE (MAXIMUM) ========== */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* ========== CODE QUALITY & LINT ========== */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "verbatimModuleSyntax": true,
+
+    /* ========== MODULE RESOLUTION (MODERN) ========== */
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
-    "strict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "resolvePackageJsonExports": true,
+    "resolvePackageJsonImports": true,
+    "erasableSyntaxOnly": true,
+    "customConditions": ["source"],
+
+    /* ========== PERFORMANCE & CACHE ========== */
+    "skipLibCheck": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./.tsbuildinfo",
+
+    /* ========== PATH ALIASES (SYNC DENGAN VITE) ========== */
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@components/*": ["./src/components/*"],
+      "@core/*": ["./src/core/*"],
+      "@app/*": ["./src/app/*"],
       "@modules/*": ["./src/modules/*"],
-      "@store/*": ["./src/store/*"],
+      "@features/*": ["./src/features/*"],
+      "@components/*": ["./src/components/*"],
+      "@ui/*": ["./src/components/ui/*"],
       "@hooks/*": ["./src/hooks/*"],
       "@lib/*": ["./src/lib/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@store/*": ["./src/store/*"],
+      "@services/*": ["./src/services/*"],
+      "@api/*": ["./src/api/*"],
+      "@config/*": ["./src/config/*"],
       "@types/*": ["./src/types/*"],
-      "@i18n/*": ["./src/i18n/*"]
-    }
+      "@i18n/*": ["./src/i18n/*"],
+      "@routes/*": ["./src/routes/*"],
+      "@workers/*": ["./src/workers/*"]
+    },
+
+    /* ========== BUILD & EMIT ========== */
+    "useDefineForClassFields": true
   },
-  "include": ["src"],
+
+  "include": ["src", "src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "dist", "coverage"],
+
   "references": [{ "path": "./tsconfig.node.json" }]
-}
+  }
