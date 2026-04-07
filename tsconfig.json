@@ -6,15 +6,17 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "types": ["vite/client", "@testing-library/jest-dom"],
+    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
 
     /* ========== STRICT MODE (MAXIMUM) ========== */
     "strict": true,
+    "allowJs": false,
     "noImplicitAny": true,
     "strictNullChecks": true,
     "strictFunctionTypes": true,
     "strictBindCallApply": true,
     "strictPropertyInitialization": true,
+    "useUnknownInCatchVariables": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
@@ -43,7 +45,7 @@
     /* ========== PERFORMANCE & CACHE ========== */
     "skipLibCheck": true,
     "incremental": true,
-    "tsBuildInfoFile": "./.tsbuildinfo",
+    "tsBuildInfoFile": "./node_modules/.cache/tsbuildinfo",
 
     /* ========== PATH ALIASES (SYNC DENGAN VITE) ========== */
     "baseUrl": ".",
@@ -71,9 +73,6 @@
     /* ========== BUILD & EMIT ========== */
     "useDefineForClassFields": true
   },
-
-  "include": ["src", "src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["node_modules", "dist", "coverage"],
-
-  "references": [{ "path": "./tsconfig.node.json" }]
-  }
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts", "src/**/*.json"],
+  "exclude": ["node_modules", "dist", "coverage"]
+}
