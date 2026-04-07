@@ -82,7 +82,7 @@
     "typescript": "^6.0.2",
     "vite": "^8.0.5",
     "vite-plugin-pwa": "^1.2.0",
-    "@tanstack/router-plugin": "^1.168.10",
+    "@tanstack/router-plugin": "^1.167.12",
     "vitest": "^3.0.8",
     "@vitest/ui": "^3.0.8",
     "@vitest/coverage-v8": "^3.0.8",
