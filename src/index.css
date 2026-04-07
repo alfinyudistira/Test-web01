@@ -1,0 +1,516 @@
+/* ============================================= */
+/* TAILWIND CSS v4 — ENTERPRISE SAAS 2026        */
+/* ============================================= */
+@import "tailwindcss";
+
+/* ============================================= */
+/* PULSE BRANDING THEME — CSS VARIABLES (runtime)*/
+/* ============================================= */
+:root {
+  /* Core colors (default dark theme) */
+  --color-bg: 13 13 13;
+  --color-surface: 17 17 17;
+  --color-elevated: 22 22 22;
+  --color-border: 30 30 30;
+  --color-muted: 42 42 42;
+
+  --color-primary: 200 169 126;
+  --color-secondary: 232 131 90;
+  --color-accent: 155 142 196;
+
+  --color-success: 116 196 118;
+  --color-warning: 232 195 90;
+  --color-danger: 244 143 177;
+
+  --color-text-primary: 240 234 224;
+  --color-text-secondary: 170 170 170;
+  --color-text-muted: 102 102 102;
+  --color-text-faint: 68 68 68;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 12px;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+
+  /* Shadows */
+  --shadow-soft: 0 2px 10px rgba(0,0,0,0.25);
+  --shadow-elevated: 0 8px 30px rgba(0,0,0,0.5);
+  --shadow-glow: 0 0 20px rgba(200,169,126,0.25);
+}
+
+/* Light theme (optional, bisa diaktifkan via class) */
+.light {
+  --color-bg: 250 250 250;
+  --color-surface: 255 255 255;
+  --color-elevated: 245 245 245;
+  --color-border: 229 229 229;
+  --color-muted: 245 245 245;
+
+  --color-primary: 200 169 126;
+  --color-secondary: 232 131 90;
+  --color-accent: 155 142 196;
+
+  --color-text-primary: 23 23 23;
+  --color-text-secondary: 82 82 82;
+  --color-text-muted: 115 115 115;
+  --color-text-faint: 163 163 163;
+}
+
+/* System preference detection (auto dark/light) */
+@media (prefers-color-scheme: light) {
+  :root:not(.dark):not(.light) {
+    --color-bg: 250 250 250;
+    --color-surface: 255 255 255;
+    --color-elevated: 245 245 245;
+    --color-border: 229 229 229;
+    --color-text-primary: 23 23 23;
+    --color-text-secondary: 82 82 82;
+    --color-text-muted: 115 115 115;
+    --color-text-faint: 163 163 163;
+  }
+}
+
+/* ============================================= */
+/* TAILWIND v4 CUSTOM THEME (extend @theme)      */
+/* ============================================= */
+@theme {
+  /* Colors (mapping ke CSS variables untuk runtime switching) */
+  --color-background: rgb(var(--color-bg));
+  --color-surface: rgb(var(--color-surface));
+  --color-elevated: rgb(var(--color-elevated));
+  --color-border: rgb(var(--color-border));
+  --color-muted: rgb(var(--color-muted));
+
+  --color-primary: rgb(var(--color-primary));
+  --color-secondary: rgb(var(--color-secondary));
+  --color-accent: rgb(var(--color-accent));
+
+  --color-success: rgb(var(--color-success));
+  --color-warning: rgb(var(--color-warning));
+  --color-danger: rgb(var(--color-danger));
+
+  --color-text-primary: rgb(var(--color-text-primary));
+  --color-text-secondary: rgb(var(--color-text-secondary));
+  --color-text-muted: rgb(var(--color-text-muted));
+  --color-text-faint: rgb(var(--color-text-faint));
+
+  /* Pulse brand colors (static fallback) */
+  --color-pulse-gold: #C8A97E;
+  --color-pulse-gold-light: #E2C9A0;
+  --color-pulse-gold-dark: #A88A5E;
+  --color-pulse-coral: #E8835A;
+  --color-pulse-sage: #7EB5A6;
+  --color-pulse-violet: #9B8EC4;
+  --color-pulse-sky: #6BAED6;
+  --color-pulse-mint: #74C476;
+  --color-pulse-amber: #E8C35A;
+  --color-pulse-rose: #F48FB1;
+
+  /* Typography */
+  --font-family-display: "Playfair Display", Georgia, serif;
+  --font-family-mono: "DM Mono", "Fira Code", monospace;
+  --font-family-sans: "DM Sans", system-ui, sans-serif;
+
+  /* Font sizes */
+  --font-size-2xs: 0.625rem;
+  --line-height-2xs: 0.875rem;
+  --font-size-xs: 0.72rem;
+  --line-height-xs: 1rem;
+
+  /* Spacing */
+  --spacing-18: 4.5rem;
+  --spacing-22: 5.5rem;
+  --spacing-72: 18rem;
+  --spacing-84: 21rem;
+  --spacing-96: 24rem;
+
+  /* Border radius */
+  --radius-4: 4px;
+  --radius-6: 6px;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+
+  /* Animations */
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+  --animate-fade-in: fade-in 0.4s ease-out forwards;
+  --animate-slide-up: slide-up 0.3s ease-out forwards;
+  --animate-slide-down: slide-down 0.3s ease-out forwards;
+  --animate-typing: typing 1.5s steps(40) 1s 1 normal both;
+  --animate-skeleton: skeleton 1.5s ease-in-out infinite;
+  --animate-module-in: module-in 0.3s ease-out forwards;
+  --animate-spin-slow: spin 3s linear infinite;
+  --animate-bounce-subtle: bounce-subtle 2s ease-in-out infinite;
+
+  /* Background images */
+  --background-image-skeleton-gradient: linear-gradient(90deg, #111 25%, #1E1E1E 50%, #111 75%);
+  --background-image-gold-gradient: linear-gradient(135deg, #C8A97E, #E2C9A0);
+  --background-image-dark-mesh: radial-gradient(at 40% 20%, #1A1208 0px, transparent 50%),
+                                 radial-gradient(at 80% 0%, #0A1A0A 0px, transparent 50%);
+  --background-image-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+
+  /* Screens */
+  --screen-xs: 375px;
+  --screen-3xl: 1920px;
+
+  /* Transitions */
+  --transition-timing-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* ============================================= */
+/* KEYFRAMES (custom animations)                 */
+/* ============================================= */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px #C8A97E44; }
+  50%      { box-shadow: 0 0 24px #C8A97E99, 0 0 48px #C8A97E33; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes typing {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+@keyframes skeleton {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes module-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+
+/* ============================================= */
+/* BASE LAYER — GLOBAL RESETS & TYPOGRAPHY       */
+/* ============================================= */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: rgb(var(--color-bg));
+    color: rgb(var(--color-text-primary));
+    font-family: var(--font-family-sans);
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Custom scrollbar (theme-aware, lebih halus) */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--color-bg));
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--color-border));
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--color-text-muted));
+  }
+
+  /* Focus ring (enterprise accessibility) */
+  :focus-visible {
+    outline: 2px solid rgb(var(--color-primary));
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Selection color */
+  ::selection {
+    background: rgba(200, 169, 126, 0.3);
+    color: rgb(var(--color-text-primary));
+  }
+
+  /* Form elements reset */
+  input, textarea, select, button {
+    font: inherit;
+  }
+
+  /* Range input styling (modern) */
+  input[type="range"] {
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 999px;
+    background: rgb(var(--color-border));
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    background: rgb(var(--color-primary));
+    border: 2px solid rgb(var(--color-bg));
+    cursor: pointer;
+    transition: transform 0.1s ease;
+  }
+  input[type="range"]::-webkit-slider-thumb:active {
+    transform: scale(1.3);
+  }
+
+  /* Remove number input spinners */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* ============================================= */
+/* UTILITIES LAYER — CUSTOM UTILITY CLASSES      */
+/* ============================================= */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .glass {
+    background: rgba(17, 17, 17, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .light .glass {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .text-gradient-gold {
+    background: linear-gradient(135deg, #C8A97E, #E2C9A0);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .skeleton {
+    background: var(--background-image-skeleton-gradient);
+    background-size: 200% 100%;
+    animation: skeleton 1.5s ease-in-out infinite;
+  }
+
+  /* Tooltip utility (pure CSS, enterprise) */
+  .tooltip {
+    position: relative;
+    cursor: help;
+  }
+  .tooltip::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    background: rgb(var(--color-elevated));
+    color: rgb(var(--color-text-primary));
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid rgb(var(--color-border));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 10;
+  }
+  .tooltip:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-12px);
+  }
+
+  /* Spinner loader */
+  .spinner {
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid rgb(var(--color-border));
+    border-top-color: rgb(var(--color-primary));
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Flex & grid helpers */
+  .flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* ============================================= */
+/* COMPONENTS LAYER — REUSABLE COMPONENT STYLES  */
+/* ============================================= */
+@layer components {
+  .card {
+    background: rgb(var(--color-surface));
+    border: 1px solid rgb(var(--color-border));
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-soft);
+    padding: 1.5rem;
+  }
+  .card-elevated {
+    background: rgb(var(--color-elevated));
+    border: 1px solid rgb(var(--color-border));
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-elevated);
+    padding: 1.5rem;
+  }
+  .btn-primary {
+    background: rgb(var(--color-primary));
+    color: #000;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+  }
+  .btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+  .module-enter {
+    animation: module-in 0.3s ease-out forwards;
+  }
+}
+
+/* ============================================= */
+/* VIEW TRANSITIONS API (modern browser)         */
+/* ============================================= */
+@layer utilities {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.25s;
+    animation-timing-function: ease-out;
+  }
+  ::view-transition-old(root) {
+    animation-name: vt-fade-out;
+  }
+  ::view-transition-new(root) {
+    animation-name: vt-fade-in;
+  }
+  @keyframes vt-fade-out {
+    to { opacity: 0; }
+  }
+  @keyframes vt-fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  ::view-transition-old(module-*),
+  ::view-transition-new(module-*) {
+    animation-duration: 0.2s;
+    animation-timing-function: ease-out;
+  }
+  ::view-transition-old(module-*) {
+    animation-name: vt-slide-out;
+  }
+  ::view-transition-new(module-*) {
+    animation-name: vt-slide-in;
+  }
+  @keyframes vt-slide-out {
+    to { opacity: 0; transform: translateX(-12px); }
+  }
+  @keyframes vt-slide-in {
+    from { opacity: 0; transform: translateX(12px); }
+  }
+}
+
+/* ============================================= */
+/* PRINT STYLES (enterprise reports)             */
+/* ============================================= */
+@media print {
+  nav, footer, button, .no-print,
+  input[type="range"], [role="status"], .glass {
+    display: none !important;
+  }
+  body, #root {
+    background: #fff !important;
+    color: #111 !important;
+  }
+  * {
+    font-family: Georgia, serif !important;
+    color: #111 !important;
+    border-color: #ddd !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  .print-header {
+    display: block !important;
+  }
+  a {
+    text-decoration: underline;
+    color: #000 !important;
+  }
+  a[href]:after {
+    content: " (" attr(href) ")";
+    font-size: 0.8rem;
+  }
+}
+
+/* ============================================= */
+/* ACCESSIBILITY — REDUCED MOTION                */
+/* ============================================= */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================= */
+/* HIGH CONTRAST MODE (forced colors)            */
+/* ============================================= */
+@media (forced-colors: active) {
+  :root {
+    --color-primary: 255 255 255;
+  }
+  .btn-primary {
+    border: 1px solid CanvasText;
+  }
+  .card, .card-elevated {
+    border: 1px solid CanvasText;
+  }
+}
