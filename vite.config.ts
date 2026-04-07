@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import { visualizer } from 'vite-plugin-bundle-visualizer';
+import { visualizer } from 'rollup-plugin-visualizer';
 import viteCompression from 'vite-plugin-compression';
 import legacy from '@vitejs/plugin-legacy';
 import path from 'path';
@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => {
   // Load environment variables
   const env = loadEnv(mode, process.cwd(), '');
   const parsedEnv = envSchema.safeParse(env);
+  
   if (!parsedEnv.success && mode === 'production') {
     console.error('❌ Invalid environment variables:', parsedEnv.error.format());
     process.exit(1);
@@ -44,11 +45,10 @@ export default defineConfig(({ mode }) => {
       // Tailwind CSS v4 (Rust engine, super cepat)
       tailwindcss(),
 
-      // React 19 + fast refresh
+      // React 19 + fast refresh + React Compiler
       react({
-        jsxRuntime: 'automatic',
         babel: {
-          plugins: isDev ? [['babel-plugin-react-compiler', { target: '19' }]] : [],
+          plugins: isProd ? [['babel-plugin-react-compiler', { target: '19' }]] : [],
         },
       }),
 
@@ -101,7 +101,7 @@ export default defineConfig(({ mode }) => {
       isProd && viteCompression({ algorithm: 'gzip', threshold: 1024, deleteOriginalAssets: false }),
 
       // Bundle visualizer (hanya jika ada flag VISUALIZE=true)
-      process.env.VISUALIZE === 'true' && visualizer({ open: true, gzipSize: true, brotliSize: true }),
+      process.env.VISUALIZE === 'true' && visualizer({ open: true, gzipSize: true, brotliSize: true }) as PluginOption,
 
       // Legacy browser support (optional, tapi best practice untuk enterprise)
       isProd && legacy({ targets: ['defaults', 'not IE 11'], modernPolyfills: true }),
@@ -110,7 +110,6 @@ export default defineConfig(({ mode }) => {
 
     resolve: {
       alias: {
-        // Core layers (lengkap dari Versi A + tambahan)
         '@': r('./src'),
         '@core': r('./src/core'),
         '@app': r('./src/app'),
@@ -140,11 +139,11 @@ export default defineConfig(({ mode }) => {
 
     server: {
       port: 5173,
-      host: true,          // Akses dari LAN
-      open: true,          // Buka browser otomatis
+      host: true,
+      open: true,
       strictPort: true,
       cors: true,
-      warmup: {           // Vite 8 feature: warmup files untuk faster dev start
+      warmup: {
         clientFiles: ['./src/main.tsx', './src/App.tsx'],
       },
     },
@@ -161,14 +160,13 @@ export default defineConfig(({ mode }) => {
 
     build: {
       target: 'esnext',
-      sourcemap: isProd ? 'hidden' : true, // hidden sourcemap for production debugging
+      sourcemap: isProd ? 'hidden' : true,
       minify: 'esbuild',
       cssMinify: 'esbuild',
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
           manualChunks: {
-            // Super granular chunks untuk enterprise
             'react-core': ['react', 'react-dom'],
             'router': ['@tanstack/react-router'],
             'query': ['@tanstack/react-query', '@tanstack/react-table'],
@@ -202,7 +200,7 @@ export default defineConfig(({ mode }) => {
         'clsx',
         'tailwind-merge',
       ],
-      exclude: ['@tailwindcss/vite'], // tailwindcss v4 tidak perlu di optimize
+      exclude: ['@tailwindcss/vite'],
       esbuildOptions: { target: 'esnext' },
     },
 
@@ -218,7 +216,6 @@ export default defineConfig(({ mode }) => {
       supported: { 'top-level-await': true },
     },
 
-    // Worker support
     worker: {
       format: 'es',
       plugins: () => [react()],
