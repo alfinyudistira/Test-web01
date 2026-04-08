@@ -1,8 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   PULSE ENTERPRISE HOOKS — Reactive Controllers v3.0
-   SSR-safe | Type-safe | Performance-optimized | Multi-tab sync | Real-time
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 import {
   useState,
   useEffect,
@@ -18,20 +13,12 @@ import { liveService } from '@/lib/liveService';
 import { db } from '@/lib/idb';
 import type { AppEvent, EventType, Candidate, PlatformConfig } from '@/types';
 
-// Re-export dari library
 export { useDebouncedValue };
 
-// ============================================================================
-// 1. SSR-SAFE LAYOUT EFFECT
-// ============================================================================
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
-// ============================================================================
-// 2. RE-EXPORT DARI VERSI A & B (dengan integrasi)
-// ============================================================================
 export { useDebouncedValue };
 
-// ── useLiveEvent (dari Versi A) ──────────────────────────────────────────
 export function useLiveEvent<T = unknown>(
   type: EventType | '*',
   callback: (event: AppEvent<T>) => void
@@ -46,7 +33,6 @@ export function useLiveEvent<T = unknown>(
   }, [type]);
 }
 
-// ── useEnterpriseStorage (dari Versi A, ditingkatkan) ────────────────────
 export function useEnterpriseStorage<T>(key: keyof typeof db.candidates, initialValue: T) {
   const [data, setData] = useState<T>(initialValue);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,7 +67,6 @@ export function useEnterpriseStorage<T>(key: keyof typeof db.candidates, initial
   return { data, set, isLoading };
 }
 
-// ── useKeyboardShortcuts (gabungan A + B, enhanced) ──────────────────────
 interface ShortcutConfig {
   key: string;
   ctrl?: boolean;
@@ -119,7 +104,6 @@ export function useKeyboardShortcuts(
   }, [shortcutsArray]);
 }
 
-// ── useLocalStorage (multi-tab sync, dari kedua versi) ───────────────────
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
   const read = useCallback(() => {
     try {
@@ -149,7 +133,6 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
   return [state, set];
 }
 
-// ── useSessionStorage (dari Versi B) ─────────────────────────────────────
 export function useSessionStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
   const read = useCallback(() => {
     try {
@@ -176,7 +159,6 @@ export function useSessionStorage<T>(key: string, initialValue: T): [T, (value: 
   return [state, set];
 }
 
-// ── useIdle (dari Versi A) ───────────────────────────────────────────────
 export function useIdle(timeoutMs: number = 300000): boolean {
   const [idle, setIdle] = useState(false);
   useEffect(() => {
@@ -197,7 +179,6 @@ export function useIdle(timeoutMs: number = 300000): boolean {
   return idle;
 }
 
-// ── useDynamicTheme (dari Versi A) ───────────────────────────────────────
 export function useDynamicTheme(primaryColor: string): void {
   useIsomorphicLayoutEffect(() => {
     document.documentElement.style.setProperty('--color-primary', primaryColor);
@@ -209,7 +190,6 @@ function hexToRgb(hex: string): string {
   return result ? `${parseInt(result[1], 16)} ${parseInt(result[2], 16)} ${parseInt(result[3], 16)}` : '200 169 126';
 }
 
-// ── useMediaQuery & responsive (dari Versi B) ────────────────────────────
 export function useMediaQuery(query: string): boolean {
   const getMatch = () => (typeof window !== 'undefined' ? window.matchMedia(query).matches : false);
   const [matches, setMatches] = useState(getMatch);
@@ -226,7 +206,6 @@ export const useIsMobile = () => useMediaQuery('(max-width: 767px)');
 export const useIsTablet = () => useMediaQuery('(min-width: 768px) and (max-width: 1023px)');
 export const useIsDesktop = () => useMediaQuery('(min-width: 1024px)');
 
-// ── useOnline (dari Versi B) ─────────────────────────────────────────────
 export function useOnline(): boolean {
   const [online, setOnline] = useState(() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
   useEffect(() => {
@@ -242,7 +221,6 @@ export function useOnline(): boolean {
   return online;
 }
 
-// ── useCopyToClipboard (dari Versi B) ────────────────────────────────────
 export function useCopyToClipboard(): [boolean, (text: string) => Promise<void>] {
   const [copied, setCopied] = useState(false);
   const copy = useCallback(async (text: string) => {
@@ -262,7 +240,6 @@ export function useCopyToClipboard(): [boolean, (text: string) => Promise<void>]
   return [copied, copy];
 }
 
-// ── useScrollLock (dari Versi B) ─────────────────────────────────────────
 export function useScrollLock(active: boolean): void {
   useEffect(() => {
     if (!active) return;
@@ -274,14 +251,12 @@ export function useScrollLock(active: boolean): void {
   }, [active]);
 }
 
-// ── useToggle (dari Versi B) ─────────────────────────────────────────────
 export function useToggle(initial = false): [boolean, () => void] {
   const [state, setState] = useState(initial);
   const toggle = useCallback(() => setState(s => !s), []);
   return [state, toggle];
 }
 
-// ── useAsync (dari Versi B) ──────────────────────────────────────────────
 export function useAsync<T>(fn: () => Promise<T>, deps: unknown[] = []) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
@@ -298,14 +273,12 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[] = []) {
   return { data, loading, error, refetch: () => fn().then(setData).catch(setError) };
 }
 
-// ── usePrevious (dari Versi B) ───────────────────────────────────────────
 export function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<T>();
   useIsomorphicLayoutEffect(() => { ref.current = value; });
   return ref.current;
 }
 
-// ── useEventListener (dari Versi B) ──────────────────────────────────────
 export function useEventListener<K extends keyof WindowEventMap>(
   event: K,
   handler: (e: WindowEventMap[K]) => void,
@@ -319,7 +292,6 @@ export function useEventListener<K extends keyof WindowEventMap>(
   }, [event, handler, target]);
 }
 
-// ── useIntersectionObserver (dari B) ─────────────────────────────────────
 export function useIntersectionObserver<T extends Element>(
   options?: IntersectionObserverInit
 ): [React.RefObject<T>, boolean] {
@@ -334,16 +306,8 @@ export function useIntersectionObserver<T extends Element>(
   return [ref, inView];
 }
 
-// ── useHaptic (dari A & B) ───────────────────────────────────────────────
 export const useHaptic = () => useCallback((pattern: Parameters<typeof haptic>[0] = 'light') => haptic(pattern), []);
-
-// ── useViewTransition (dari A & B) ───────────────────────────────────────
 export const useViewTransition = () => useCallback((fn: () => void) => withViewTransition(fn), []);
-
-// ============================================================================
-// 3. TAMBAHAN HOOKS ENTERPRISE (dari saya)
-// ============================================================================
-// ── useThrottle ──────────────────────────────────────────────────────────
 export function useThrottle<T extends (...args: any[]) => any>(
   fn: T,
   delay: number
@@ -352,10 +316,6 @@ export function useThrottle<T extends (...args: any[]) => any>(
   return throttledFn;
 }
 
-// ── useDebounce (alternatif tanpa library, tapi kita pakai use-debounce sudah ada) ──
-// sudah ada useDebouncedValue
-
-// ── useWindowSize (resize dengan debounce) ───────────────────────────────
 interface WindowSize {
   width: number;
   height: number;
@@ -375,7 +335,6 @@ export function useWindowSize(): WindowSize {
   return size;
 }
 
-// ── useClickOutside (untuk modal/dropdown) ───────────────────────────────
 export function useClickOutside<T extends HTMLElement = HTMLElement>(
   handler: (event: MouseEvent | TouchEvent) => void
 ): React.RefObject<T> {
@@ -395,7 +354,6 @@ export function useClickOutside<T extends HTMLElement = HTMLElement>(
   return ref;
 }
 
-// ── useFocusTrap (aksesibility) ─────────────────────────────────────────
 export function useFocusTrap(active: boolean): React.RefObject<HTMLElement> {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -423,7 +381,6 @@ export function useFocusTrap(active: boolean): React.RefObject<HTMLElement> {
   return ref as React.RefObject<HTMLElement>;
 }
 
-// ── useRaf (requestAnimationFrame) ──────────────────────────────────────
 export function useRaf(callback: (time: number) => void, deps: unknown[] = []) {
   const frameRef = useRef<number>();
   const savedCallback = useRef(callback);
@@ -445,8 +402,7 @@ export function useRaf(callback: (time: number) => void, deps: unknown[] = []) {
   }, deps);
 }
 
-// ── useDeepCompareEffect (membandingkan dependency secara dalam) ─────────
-import { isEqual } from 'lodash-es'; // atau buat sendiri yang simple
+import { isEqual } from 'lodash-es';
 function useDeepCompareMemoize(value: any) {
   const ref = useRef<any>();
   if (!isEqual(value, ref.current)) ref.current = value;
@@ -456,7 +412,6 @@ export function useDeepCompareEffect(effect: React.EffectCallback, deps: React.D
   useEffect(effect, deps.map(useDeepCompareMemoize));
 }
 
-// ── usePreviousDistinct ──────────────────────────────────────────────────
 export function usePreviousDistinct<T>(value: T): T | undefined {
   const prevRef = useRef<T>();
   const curRef = useRef<T>(value);
@@ -467,7 +422,6 @@ export function usePreviousDistinct<T>(value: T): T | undefined {
   return prevRef.current;
 }
 
-// ── useCounter ───────────────────────────────────────────────────────────
 export function useCounter(initial = 0, step = 1) {
   const [count, setCount] = useState(initial);
   const increment = useCallback(() => setCount(c => c + step), [step]);
@@ -476,7 +430,6 @@ export function useCounter(initial = 0, step = 1) {
   return { count, increment, decrement, reset };
 }
 
-// ── useUndo (state dengan history) ───────────────────────────────────────
 interface UndoState<T> {
   past: T[];
   present: T;
@@ -536,7 +489,6 @@ export function useUndo<T>(initial: T): {
   };
 }
 
-// ── useLiveQuery (reactive query dari IDB + live events) ─────────────────
 export function useLiveQuery<T>(
   query: () => Promise<T>,
   deps: unknown[] = []
@@ -546,7 +498,4 @@ export function useLiveQuery<T>(
   return { data, loading, error, refetch };
 }
 
-// ============================================================================
-// 4. RE-EXPORT UTILITY TYPES
-// ============================================================================
 export type { EventType, AppEvent };
