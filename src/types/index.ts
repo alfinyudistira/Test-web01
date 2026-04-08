@@ -1,11 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   PULSE HIRING INTELLIGENCE — ENTERPRISE TYPE SYSTEM v3.0
-   Universal | Extensible | Multi-Tenant | Event-Driven | Type-Safe
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-// ============================================================================
-// 1. BRANDED TYPES (Nominal Typing) — dari Versi B & C
-// ============================================================================
 export type Brand<K, T extends string> = K & { readonly __brand: T };
 export type CandidateId = Brand<string, 'Candidate'>;
 export type CompetencyId = Brand<string, 'Competency'>;
@@ -16,9 +8,6 @@ export type WebhookId = Brand<string, 'Webhook'>;
 export type JobId = Brand<string, 'Job'>;
 export type ISODate = string & { readonly __iso: true };
 
-// ============================================================================
-// 2. UTILITY TYPES (Supercharged) — dari Versi A + tambahan
-// ============================================================================
 export type Primitive = string | number | boolean | null | undefined;
 export type Nullable<T> = T | null;
 export type Optional<T> = T | undefined;
@@ -30,22 +19,19 @@ export type ValueOf<T> = T[keyof T];
 export type PickByType<T, V> = { [K in keyof T as T[K] extends V ? K : never]: T[K] };
 export type AsyncReturnType<T extends (...args: any) => any> = Awaited<ReturnType<T>>;
 
-// Result type (Rust-like error handling)
+export type JSONPrimitive = string | number | boolean | null;
+export type JSONValue = JSONPrimitive | JSONObject | JSONArray;
+export type JSONObject = { [member: string]: JSONValue };
+export type JSONArray = Array<JSONValue>;
 export type Result<T, E = Error> = { ok: true; value: T } | { ok: false; error: E };
-export const Ok = <T>(value: T): Result<T, never> => ({ ok: true, value });
-export const Err = <E>(error: E): Result<never, E> => ({ ok: false, error });
 
-// Async state (React Query friendly)
 export type AsyncStatus = 'idle' | 'loading' | 'success' | 'error';
 export interface AsyncState<T, E = string> {
   status: AsyncStatus;
-  data?: T;
-  error?: E;
+  data: T | null;
+  error: E | null;
 }
 
-// ============================================================================
-// 3. DOMAIN ENUMS & PRIMITIVES
-// ============================================================================
 export type ScoreValue = 1 | 2 | 3 | 4 | 5;
 export type HireDecision =
   | 'STRONG_HIRE'
@@ -65,9 +51,6 @@ export type CandidateStatus =
   | 'SOURCING' | 'SCREENING' | 'INTERVIEWING' | 'OFFER'
   | 'HIRED' | 'REJECTED' | 'WITHDRAWN' | 'ACTIVE' | 'ARCHIVED' | 'BLACKLISTED';
 
-// ============================================================================
-// 4. COMPETENCY & SCORING (dari Versi C)
-// ============================================================================
 export interface CompetencyLevel {
   score: ScoreValue;
   expectation: string;
@@ -77,7 +60,7 @@ export interface Competency extends Timestamped, Audited {
   id: CompetencyId;
   label: string;
   shortCode: string;
-  weight: number; // 0-1, sum to 1 per config
+  weight: number;
   isCritical: boolean;
   category: 'hard' | 'soft' | 'leadership' | 'culture';
   description?: string;
@@ -86,7 +69,7 @@ export interface Competency extends Timestamped, Audited {
   icon?: string; 
   redFlags?: string[];
   greenFlags?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: JSONObject;
 }
 
 export interface CandidateScore {
@@ -97,15 +80,12 @@ export interface CandidateScore {
   evaluatedAt?: ISODate;
 }
 
-// ============================================================================
-// 5. CANDIDATE & DECISION (gabungan A, B, C)
-// ============================================================================
 export interface Candidate extends Timestamped, Audited {
   id: CandidateId;
   orgId: OrganizationId;
   firstName: string;
   lastName: string;
-  name?: string; // fallback
+  name?: string;
   email: string;
   phone?: string;
   position?: string;
@@ -162,7 +142,7 @@ export interface DecisionResult {
 
 export interface HiringPredictiveModel {
   successProbability: number;
-  estimatedRampUpTime: number; // weeks
+  estimatedRampUpTime: number;
   attritionRisk: number;
   benchmarkPercentile: number;
 }
@@ -172,25 +152,19 @@ export interface DecisionAnalytics extends DecisionResult {
   roiEstimate: number;
 }
 
-// ============================================================================
-// 6. TIMESTAMP & AUDIT (dari C + A)
-// ============================================================================
 export interface Timestamped {
   createdAt: ISODate;
   updatedAt: ISODate;
-  deletedAt?: ISODate | null;
+  deletedAt: ISODate | null;
 }
 export interface Audited {
   createdBy: UserId;
   updatedBy: UserId;
 }
 export interface SoftDeletable {
-  deletedAt?: ISODate | null;
+  deletedAt: ISODate | null;
 }
 
-// ============================================================================
-// 7. FUNNEL & PIPELINE
-// ============================================================================
 export interface FunnelStage {
   id: string;
   name: string;
@@ -210,9 +184,6 @@ export interface PipelineEvent extends Timestamped {
   note?: string;
 }
 
-// ============================================================================
-// 8. SALARY BENCHMARK
-// ============================================================================
 export interface SalaryRange {
   min: number;
   mid: number;
@@ -226,9 +197,6 @@ export interface SalaryBenchmarkEntry {
   source?: string;
 }
 
-// ============================================================================
-// 9. DIVERSITY & INCLUSION
-// ============================================================================
 export interface DIMetric {
   id: string;
   label: string;
@@ -240,9 +208,6 @@ export interface DIMetric {
   breakdown?: Record<string, number>;
 }
 
-// ============================================================================
-// 10. ONBOARDING & QUESTION BANK
-// ============================================================================
 export interface OnboardingItem {
   id: string;
   text: string;
@@ -271,9 +236,6 @@ export interface InterviewQuestion {
   timeEstimateMinutes?: number;
 }
 
-// ============================================================================
-// 11. RBAC & MULTI-TENANT (dari B + C)
-// ============================================================================
 export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'RECRUITER' | 'HIRING_MANAGER' | 'INTERVIEWER' | 'VIEWER';
 export interface Permission {
   resource: string;
@@ -310,9 +272,6 @@ export interface Tenant extends Timestamped {
   config: PlatformConfig;
 }
 
-// ============================================================================
-// 12. PLATFORM CONFIGURATION (SSOT) — gabungan A, B, C
-// ============================================================================
 export interface FeatureFlags {
   aiSummary: boolean;
   blindScreening: boolean;
@@ -327,7 +286,7 @@ export interface FeatureFlags {
 export interface ModuleFeature {
   id: string;
   enabled: boolean;
-  config: Record<string, unknown>;
+  config: JSONObject;
   permissionRequired: UserRole[];
 }
 export interface PlatformConfig extends Timestamped {
@@ -351,7 +310,7 @@ export interface PlatformConfig extends Timestamped {
     accentColor: string;
     logoUrl?: string;
     faviconUrl?: string;
-    fontFamily?: 'Inter' | 'Plus Jakarta Sans' | 'Geist';
+    fontFamily?: 'Inter' | 'Plus Jakarta Sans' | 'Geist' | 'DM Sans';
   };
   workflow?: {
     stages: FunnelStage[];
@@ -366,9 +325,6 @@ export interface PlatformConfig extends Timestamped {
   version: string;
 }
 
-// ============================================================================
-// 13. WEBHOOKS & JOB QUEUE (dari A)
-// ============================================================================
 export type WebhookEventType = 'candidate.created' | 'candidate.updated' | 'candidate.deleted' | 'decision.made';
 export interface WebhookSubscription extends Timestamped {
   id: WebhookId;
@@ -381,12 +337,12 @@ export interface WebhookSubscription extends Timestamped {
 export interface WebhookEvent extends Timestamped {
   id: string;
   eventType: WebhookEventType;
-  payload: unknown;
+  payload: JSONValue;
   attempts: number;
   success: boolean;
   responseStatus?: number;
 }
-export interface Job<T = unknown> extends Timestamped {
+export interface Job<T = JSONValue> extends Timestamped {
   id: JobId;
   type: 'email' | 'export_csv' | 'export_pdf' | 'webhook_delivery' | 'sync';
   payload: T;
@@ -396,9 +352,6 @@ export interface Job<T = unknown> extends Timestamped {
   error?: string;
 }
 
-// ============================================================================
-// 14. AUDIT LOG (ENTERPRISE)
-// ============================================================================
 export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'VIEW' | 'EXPORT' | 'LOGIN' | 'LOGOUT';
 export type AuditEntity = 'candidate' | 'config' | 'user' | 'report' | 'webhook';
 export interface AuditLogEntry extends Timestamped {
@@ -407,16 +360,13 @@ export interface AuditLogEntry extends Timestamped {
   action: AuditAction;
   entityType: AuditEntity;
   entityId?: string;
-  oldValue?: unknown;
-  newValue?: unknown;
+  oldValue?: JSONValue;
+  newValue?: JSONValue;
   ipAddress?: string;
   userAgent?: string;
   tenantId?: TenantId;
 }
 
-// ============================================================================
-// 15. ANALYTICS & STATS
-// ============================================================================
 export interface AppStats {
   total: number;
   strongHires: number;
@@ -440,9 +390,6 @@ export interface ChartDataPoint {
   value: number;
 }
 
-// ============================================================================
-// 16. UI & NOTIFICATIONS (dari A + B)
-// ============================================================================
 export interface UIState {
   sidebarOpen: boolean;
   theme: 'dark' | 'light';
@@ -465,9 +412,6 @@ export interface Notification extends Timestamped {
   priority: 'low' | 'medium' | 'high';
 }
 
-// ============================================================================
-// 17. REAL-TIME EVENT SYSTEM (dari C + tambahan)
-// ============================================================================
 export type EventType =
   | 'CANDIDATE_CREATED'
   | 'CANDIDATE_UPDATED'
@@ -475,27 +419,24 @@ export type EventType =
   | 'DECISION_FINALIZED'
   | 'CONFIG_CHANGED'
   | 'SYSTEM_MAINTENANCE';
-export interface AppEvent<T = unknown> {
+export interface AppEvent<T = JSONValue> {
   id: string;
   type: EventType;
   payload: T;
   timestamp: ISODate;
   actor: { id: UserId; name: string };
 }
-export type EventHandler<T = unknown> = (event: AppEvent<T>) => void;
+export type EventHandler<T = JSONValue> = (event: AppEvent<T>) => void;
 export interface EventBus {
   emit<T>(event: AppEvent<T>): void;
   on<T>(type: EventType, handler: EventHandler<T>): () => void;
   off<T>(type: EventType, handler: EventHandler<T>): void;
 }
 
-// ============================================================================
-// 18. API & PAGINATION (gabungan A, B, C)
-// ============================================================================
 export interface PaginationParams {
   page: number;
   limit: number;
-  cursor?: string; // untuk cursor-based pagination
+  cursor?: string;
 }
 export interface PaginatedResponse<T> {
   data: T[];
@@ -510,7 +451,7 @@ export interface PaginatedResponse<T> {
 export interface FilterCondition {
   field: string;
   operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'in' | 'between';
-  value: unknown;
+  value: Primitive | Primitive[];
 }
 export interface SortOption {
   field: string;
@@ -529,13 +470,9 @@ export interface ApiSuccess<T> {
 }
 export interface ApiError {
   success: false;
-  error: { code: string; message: string; details?: unknown; requestId?: string };
+  error: { code: string; message: string; details?: JSONValue; requestId?: string };
 }
 export type ApiResponse<T> = ApiSuccess<T> | ApiError;
-
-// ============================================================================
-// 19. STORAGE, CACHE, MONITORING
-// ============================================================================
 export interface CacheEntry<T> {
   data: T;
   expiresAt: number;
@@ -567,31 +504,6 @@ export interface LogEntry {
   level: 'info' | 'warn' | 'error' | 'debug';
   message: string;
   timestamp: ISODate;
-  context?: Record<string, unknown>;
+  context?: JSONObject;
 }
-
-// ============================================================================
-// 20. TYPE GUARDS, VALIDATION & SAFE FACTORIES (UPGRADED)
-// ============================================================================
-
-/** * Safe factory untuk membuat Branded Types. 
- * Menggantikan `isBranded` lama yang menyebabkan error runtime karena properti __brand hilang setelah kompilasi. 
- */
-export function createId<T extends string>(id: string): Brand<string, T> {
-  return id as Brand<string, T>;
-}
-
-/** Validasi string adalah format ISO Date yang valid */
-export function isISODate(value: unknown): value is ISODate {
-  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/.test(value);
-}
-
-/** Cek status Result Pattern dengan aman (Rust-style) */
-export function isResultOk<T, E>(result: Result<T, E>): result is { ok: true; value: T } {
-  return result.ok === true;
-}
-
-// ============================================================================
-// 21. RE-EXPORT FOR CONVENIENCE
-// ============================================================================
 export type { ScoreValue as Score, HireDecision as Decision };
