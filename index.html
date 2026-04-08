@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0D0D0D" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="dark light" />
     <meta name="generator" content="Pulse Enterprise Framework - Vite 8 + React 19" />
 
-    <title>Pulse Hiring Intelligence — Enterprise Talent Acquisition Platform</title>
+    <title>%VITE_APP_NAME% — Enterprise Talent Acquisition Platform</title>
     <meta name="description" content="Science-backed, bias-free hiring decisions for global enterprises. Fit scoring, funnel analytics, D&I dashboard, executive BI." />
     <meta name="keywords" content="hiring platform, talent acquisition, HR analytics, AI hiring, fit calculator, SaaS, enterprise HR" />
     <meta name="author" content="Pulse Systems" />
@@ -34,14 +34,13 @@
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         font-src 'self' https://fonts.gstatic.com data:;
         img-src 'self' data: https:;
-        connect-src 'self' https: wss: ws: http://localhost:* http://127.0.0.1:*;
+        connect-src 'self' https: wss: ws: http://localhost:* http://127.0.0.1:* *.sentry.io;
         worker-src 'self' blob:;
         manifest-src 'self';
       "
     />
 
     <style>
-      /* Reset & Base */
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body {
         background-color: #0D0D0D;
@@ -50,7 +49,6 @@
         overflow-x: hidden;
       }
       
-      /* Premium Pulse Loader */
       #app-loader {
         position: fixed;
         inset: 0;
@@ -61,6 +59,7 @@
         background: #0D0D0D;
         z-index: 9999;
         transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: opacity;
       }
       .pulse-ring {
         width: 60px;
@@ -71,6 +70,7 @@
         animation: pulse-animation 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
         margin-bottom: 24px;
         box-shadow: 0 0 20px rgba(200, 169, 126, 0.2);
+        will-change: transform, opacity, box-shadow;
       }
       .loader-text {
         color: #C8A97E;
@@ -88,29 +88,29 @@
   </head>
 
   <body>
-    <div id="root" role="application" aria-label="Pulse Hiring Intelligence Platform"></div>
+    <div id="root" role="application" aria-label="%VITE_APP_NAME%"></div>
 
     <div id="app-loader" aria-hidden="true">
       <div class="pulse-ring"></div>
-      <div class="loader-text">Pulse Intelligence</div>
+      <div class="loader-text">Initializing Engine...</div>
     </div>
 
     <script type="module" src="/src/main.tsx"></script>
 
     <script>
-      // Disediakan untuk dipanggil oleh React saat mount selesai
       window.removePulseLoader = function() {
         const loader = document.getElementById('app-loader');
         if (loader) {
           loader.style.opacity = '0';
-          setTimeout(() => loader.remove(), 500); // Sinkron dengan CSS transition
+          setTimeout(() => {
+            if (loader.parentNode) loader.remove();
+          }, 500); 
         }
       };
       
-      // Failsafe: Hapus loader maksimal setelah 6 detik jika terjadi error di JS
       setTimeout(() => {
         if (document.getElementById('app-loader')) {
-          console.warn('Failsafe triggered: removing loader manually');
+          console.warn('⚠️ [Pulse Core] Failsafe triggered: React rendering timeout.');
           window.removePulseLoader();
         }
       }, 6000);
