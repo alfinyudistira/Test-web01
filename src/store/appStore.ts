@@ -1,12 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   PULSE ENTERPRISE STORE — Zustand + Immer + IDB + Devtools
+   PULSE ENTERPRISE STORE — Zustand v5 + Immer + IDB + Devtools
    Scalable | Observable | Optimistic | Dual Persistence | Type-Safe
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import { create } from 'zustand';
 import { devtools, persist, subscribeWithSelector, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import shallow from 'zustand/shallow';
+import { useShallow } from 'zustand/react/shallow'; // Upgrade ke Zustand v5 API
 import type {
   PlatformConfig,
   AppStats,
@@ -16,10 +16,12 @@ import type {
   AppEvent,
   OrganizationId,
   CandidateId,
+  CompetencyId,
+  JSONValue,
 } from '@/types';
-import { DEFAULT_CONFIG, mergeConfig, validateConfig } from '@/lib/defaultConfig';
+import { DEFAULT_CONFIG, mergeConfig, validateConfig } from '@/lib/defaultconfig';
 import { db } from '@/lib/idb';
-import { computeWeightedScore } from '@/lib/utils';
+import { computeWeightedScore, uid, safeParseJSON, isResultOk } from '@/lib/utils'; // Integrasi utilitas
 
 // ============================================================================
 // 1. CONSTANTS & HELPERS
@@ -50,6 +52,7 @@ function computeStatsFromCandidates(candidates: Candidate[], config: PlatformCon
   const hires = scores.filter(s => s >= hireThreshold && s < strongThreshold).length;
   const noHires = total - strongHires - hires;
   const avgScore = total === 0 ? 0 : scores.reduce((a, b) => a + b, 0) / total;
+  
   return {
     total,
     strongHires,
@@ -78,12 +81,10 @@ interface AppState {
 
   // UI Feedback
   notifications: ToastPayload[];
-  liveLog: AppEvent[];
-  confettiTrigger: number;       // increment to trigger confetti
+  liveLog: AppEvent<JSONValue>[];
+  confettiTrigger: number;
   onboardingChecked: Record<string, boolean>;
-
-  // Optional (untuk kompatibilitas)
-  showConfetti?: boolean;        // bisa pakai trigger atau boolean
+  showConfetti?: boolean;
 }
 
 interface AppActions {
@@ -99,13 +100,13 @@ interface AppActions {
   updateConfig: (patch: Partial<PlatformConfig>) => Promise<void>;
   resetConfig: () => Promise<void>;
 
-  // Candidates (dengan sync ke IDB)
+  // Candidates
   upsertCandidate: (candidate: Candidate) => Promise<void>;
   deleteCandidate: (id: CandidateId) => Promise<void>;
   bulkUpdateCandidates: (candidates: Candidate[]) => Promise<void>;
-  updateCandidateScore: (id: CandidateId, competencyId: string, score: number) => Promise<void>;
+  updateCandidateScore: (id: CandidateId, competencyId: CompetencyId, score: number) => Promise<void>;
 
-  // Stats (reactive)
+  // Stats
   refreshStats: () => void;
 
   // Toast
@@ -113,7 +114,7 @@ interface AppActions {
   removeToast: (id: string) => void;
 
   // Live Events
-  ingestLiveEvent: (event: AppEvent) => void;
+  ingestLiveEvent: (event: AppEvent<JSONValue>) => void;
   clearLiveLog: () => void;
 
   // Confetti
@@ -126,7 +127,7 @@ interface AppActions {
 type AppStore = AppState & AppActions;
 
 // ============================================================================
-// 3. CREATE STORE (dengan semua middleware)
+// 3. CREATE STORE
 // ============================================================================
 export const useAppStore = create<AppStore>()(
   devtools(
@@ -153,12 +154,13 @@ export const useAppStore = create<AppStore>()(
           // ──────────────────────────────────────────────────────────────
           bootstrap: async () => {
             try {
-              // 1. Load config dari IDB atau localStorage
               let savedConfig = await db.config.get();
               if (!savedConfig) {
-                // coba dari localStorage legacy
                 const legacy = localStorage.getItem('pulse-config');
-                if (legacy) savedConfig = JSON.parse(legacy);
+                if (legacy) {
+                  const parsed = safeParseJSON<PlatformConfig>(legacy);
+                  if (isResultOk(parsed)) savedConfig = parsed.value;
+                }
               }
               if (savedConfig) {
                 const merged = mergeConfig(DEFAULT_CONFIG, savedConfig);
@@ -170,26 +172,24 @@ export const useAppStore = create<AppStore>()(
                 }
               }
 
-              // 2. Load candidates dari IDB
               const savedCandidates = await db.candidates.getAll();
               if (savedCandidates.length) {
                 set(state => { state.candidates = savedCandidates; });
               }
 
-              // 3. Load onboarding state dari localStorage
               const onboarding = localStorage.getItem('pulse-onboarding');
               if (onboarding) {
-                set(state => { state.onboardingChecked = JSON.parse(onboarding); });
+                const parsed = safeParseJSON<Record<string, boolean>>(onboarding);
+                if (isResultOk(parsed)) {
+                  set(state => { state.onboardingChecked = parsed.value; });
+                }
               }
 
-              // 4. Hitung ulang stats
               get().refreshStats();
-
-              // 5. Tandai siap
               set(state => { state.isAppReady = true; });
             } catch (err) {
               console.error('Bootstrap failed', err);
-              set(state => { state.isAppReady = true; }); // tetap lanjut dengan default
+              set(state => { state.isAppReady = true; });
             }
           },
 
@@ -210,11 +210,10 @@ export const useAppStore = create<AppStore>()(
             const errors = validateConfig(merged);
             if (errors.length) {
               console.warn('Config validation errors', errors);
-              // tetap simpan tapi warn
             }
             set(state => { state.config = merged; });
             await db.config.set(merged);
-            get().refreshStats(); // karena threshold berubah
+            get().refreshStats();
           },
 
           resetConfig: async () => {
@@ -224,7 +223,7 @@ export const useAppStore = create<AppStore>()(
           },
 
           // ──────────────────────────────────────────────────────────────
-          // CANDIDATES (dengan sync IDB)
+          // CANDIDATES
           // ──────────────────────────────────────────────────────────────
           upsertCandidate: async (candidate) => {
             const current = get().candidates;
@@ -232,7 +231,7 @@ export const useAppStore = create<AppStore>()(
             let newCandidates;
             if (idx >= 0) {
               newCandidates = [...current];
-              newCandidates[idx] = { ...candidate, updatedAt: new Date().toISOString() };
+              newCandidates[idx] = { ...candidate, updatedAt: new Date().toISOString() as any };
             } else {
               newCandidates = [candidate, ...current];
             }
@@ -259,9 +258,9 @@ export const useAppStore = create<AppStore>()(
             if (!candidate) return;
             const existing = candidate.scores.find(s => s.competencyId === competencyId);
             const newScores = existing
-              ? candidate.scores.map(s => s.competencyId === competencyId ? { ...s, score } : s)
-              : [...candidate.scores, { competencyId, score, notes: '' }];
-            const updatedCandidate = {
+              ? candidate.scores.map(s => s.competencyId === competencyId ? { ...s, score: score as any } : s)
+              : [...candidate.scores, { competencyId, score: score as any, notes: '' }];
+            const updatedCandidate: Candidate = {
               ...candidate,
               scores: newScores,
               weightedScore: computeWeightedScore(newScores, get().config.competencies),
@@ -270,7 +269,7 @@ export const useAppStore = create<AppStore>()(
           },
 
           // ──────────────────────────────────────────────────────────────
-          // STATS (reactive)
+          // STATS
           // ──────────────────────────────────────────────────────────────
           refreshStats: () => {
             const { candidates, config } = get();
@@ -282,12 +281,11 @@ export const useAppStore = create<AppStore>()(
           // TOAST
           // ──────────────────────────────────────────────────────────────
           addToast: (toast) => {
-            const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+            const id = `toast-${uid()}`; // Menggunakan fungsi uid() enterprise kita
             set(state => {
               state.notifications.push({ ...toast, id });
               if (state.notifications.length > MAX_TOASTS) state.notifications.shift();
             });
-            // auto dismiss setelah duration (default 4000)
             const duration = toast.duration ?? 4000;
             setTimeout(() => {
               get().removeToast(id);
@@ -305,7 +303,6 @@ export const useAppStore = create<AppStore>()(
           ingestLiveEvent: (event) => set(state => {
             state.liveLog.unshift(event);
             if (state.liveLog.length > MAX_LIVE_EVENTS) state.liveLog.pop();
-            // Auto-toast untuk event penting
             if (event.type === 'DECISION_FINALIZED' || event.type === 'CANDIDATE_CREATED') {
               const msg = event.type === 'DECISION_FINALIZED'
                 ? `Decision made for candidate`
@@ -327,7 +324,6 @@ export const useAppStore = create<AppStore>()(
           // ──────────────────────────────────────────────────────────────
           triggerConfetti: () => set(state => {
             state.confettiTrigger += 1;
-            // juga set showConfetti jika diperlukan
             state.showConfetti = true;
             setTimeout(() => {
               set(s => { s.showConfetti = false; });
@@ -339,14 +335,12 @@ export const useAppStore = create<AppStore>()(
           // ──────────────────────────────────────────────────────────────
           toggleOnboardingItem: (itemId) => set(state => {
             state.onboardingChecked[itemId] = !state.onboardingChecked[itemId];
-            // simpan ke localStorage
             localStorage.setItem('pulse-onboarding', JSON.stringify(state.onboardingChecked));
           }),
         })),
         {
           name: STORE_NAME,
           version: 1,
-          // Hanya persist UI state (bukan candidates/config karena sudah di IDB)
           partialize: (state) => ({
             activeTab: state.activeTab,
             isSidebarOpen: state.isSidebarOpen,
@@ -354,14 +348,15 @@ export const useAppStore = create<AppStore>()(
             currentOrgId: state.currentOrgId,
           }),
           storage: createJSONStorage(() => localStorage),
-          migrate: (persistedState: any, version) => {
+          migrate: (persistedState: unknown, version) => {
             if (version === 0) {
+              const state = persistedState as Partial<AppState>;
               return {
-                ...persistedState,
-                onboardingChecked: {},
+                ...state,
+                onboardingChecked: state.onboardingChecked ?? {},
               };
             }
-            return persistedState;
+            return persistedState as Partial<AppState>;
           },
         }
       )
@@ -371,23 +366,21 @@ export const useAppStore = create<AppStore>()(
 );
 
 // ============================================================================
-// 4. OPTIMIZED SELECTORS (dengan shallow & memoization)
+// 4. OPTIMIZED SELECTORS (Zustand v5 Best Practice)
 // ============================================================================
-export const useConfig = () => useAppStore((s) => s.config, shallow);
-export const useCandidates = () => useAppStore((s) => s.candidates, shallow);
-export const useStats = () => useAppStore((s) => s.stats, shallow);
+export const useConfig = () => useAppStore(useShallow((s) => s.config));
+export const useCandidates = () => useAppStore(useShallow((s) => s.candidates));
+export const useStats = () => useAppStore(useShallow((s) => s.stats));
 export const useActiveTab = () => useAppStore((s) => s.activeTab);
-export const useNotifications = () => useAppStore((s) => s.notifications, shallow);
-export const useLiveLog = () => useAppStore((s) => s.liveLog, shallow);
+export const useNotifications = () => useAppStore(useShallow((s) => s.notifications));
+export const useLiveLog = () => useAppStore(useShallow((s) => s.liveLog));
 export const useConfettiTrigger = () => useAppStore((s) => s.confettiTrigger);
-export const useOnboardingChecked = () => useAppStore((s) => s.onboardingChecked, shallow);
+export const useOnboardingChecked = () => useAppStore(useShallow((s) => s.onboardingChecked));
 export const useIsAppReady = () => useAppStore((s) => s.isAppReady);
 
-// Granular selector untuk satu candidate
 export const useCandidateById = (id: string) =>
-  useAppStore((s) => s.candidates.find((c) => c.id === id), shallow);
+  useAppStore(useShallow((s) => s.candidates.find((c) => c.id === id)));
 
-// Selector untuk stats yang sudah diformat
 export const useFormattedStats = () => {
   const stats = useStats();
   return {
@@ -397,55 +390,36 @@ export const useFormattedStats = () => {
   };
 };
 
-// Action selector (agar komponen tidak re-render saat state lain berubah)
+// ============================================================================
+// 5. STATIC ACTIONS (Mencegah Infinite Re-render di Komponen React)
+// ============================================================================
+/**
+ * Best practice Zustand: Export action secara statis dari getState().
+ * Memanggil useAppActions() tidak akan memicu re-render pada komponen,
+ * sehingga sangat aman digunakan di dalam useEffect atau event handler.
+ */
 export const useAppActions = () => {
-  const setActiveTab = useAppStore((s) => s.setActiveTab);
-  const toggleSidebar = useAppStore((s) => s.toggleSidebar);
-  const upsertCandidate = useAppStore((s) => s.upsertCandidate);
-  const deleteCandidate = useAppStore((s) => s.deleteCandidate);
-  const updateConfig = useAppStore((s) => s.updateConfig);
-  const resetConfig = useAppStore((s) => s.resetConfig);
-  const addToast = useAppStore((s) => s.addToast);
-  const triggerConfetti = useAppStore((s) => s.triggerConfetti);
-  const ingestLiveEvent = useAppStore((s) => s.ingestLiveEvent);
-  const toggleOnboardingItem = useAppStore((s) => s.toggleOnboardingItem);
-  const refreshStats = useAppStore((s) => s.refreshStats);
-  const bulkUpdateCandidates = useAppStore((s) => s.bulkUpdateCandidates);
-  const updateCandidateScore = useAppStore((s) => s.updateCandidateScore);
-  return {
-    setActiveTab,
-    toggleSidebar,
-    upsertCandidate,
-    deleteCandidate,
-    updateConfig,
-    resetConfig,
-    addToast,
-    triggerConfetti,
-    ingestLiveEvent,
-    toggleOnboardingItem,
-    refreshStats,
-    bulkUpdateCandidates,
-    updateCandidateScore,
-  };
+  return useAppStore.getState();
 };
 
 // ============================================================================
-// 5. REACTIVE HOOKS (untuk side effects)
+// 6. REACTIVE HOOKS (untuk side effects)
 // ============================================================================
 import { useEffect } from 'react';
 import { liveService } from '@/lib/liveService';
 
 export function useLiveEventSync() {
-  const ingestLiveEvent = useAppStore((s) => s.ingestLiveEvent);
   useEffect(() => {
+    // Action dipanggil via getState agar aman di dalam useEffect
+    const { ingestLiveEvent } = useAppStore.getState();
     const unsub = liveService.subscribe('*', (event) => {
       ingestLiveEvent(event);
     });
     return unsub;
-  }, [ingestLiveEvent]);
+  }, []);
 }
 
 // ============================================================================
-// 6. RE-EXPORT
+// 7. RE-EXPORT
 // ============================================================================
 export type { AppStore, AppState, AppActions };
