@@ -1,13 +1,6 @@
-/* ============================================= */
-/* TAILWIND CSS v4 — ENTERPRISE SAAS 2026        */
-/* ============================================= */
 @import "tailwindcss";
 
-/* ============================================= */
-/* PULSE BRANDING THEME — CSS VARIABLES (runtime)*/
-/* ============================================= */
 :root {
-  /* Core colors (default dark theme) */
   --color-bg: 13 13 13;
   --color-surface: 17 17 17;
   --color-elevated: 22 22 22;
@@ -27,20 +20,17 @@
   --color-text-muted: 102 102 102;
   --color-text-faint: 68 68 68;
 
-  /* Radius */
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 12px;
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
 
-  /* Shadows */
   --shadow-soft: 0 2px 10px rgba(0,0,0,0.25);
   --shadow-elevated: 0 8px 30px rgba(0,0,0,0.5);
   --shadow-glow: 0 0 20px rgba(200,169,126,0.25);
 }
 
-/* Light theme (diaktifkan via class .light di tag html) */
 .light {
   --color-bg: 250 250 250;
   --color-surface: 255 255 255;
@@ -58,7 +48,6 @@
   --color-text-faint: 163 163 163;
 }
 
-/* System preference detection (auto dark/light) */
 @media (prefers-color-scheme: light) {
   :root:not(.dark):not(.light) {
     --color-bg: 250 250 250;
@@ -72,11 +61,7 @@
   }
 }
 
-/* ============================================= */
-/* TAILWIND v4 CUSTOM THEME (extend @theme)      */
-/* ============================================= */
 @theme {
-  /* Colors (Dynamic Runtime Variables) */
   --color-background: rgb(var(--color-bg));
   --color-surface: rgb(var(--color-surface));
   --color-elevated: rgb(var(--color-elevated));
@@ -96,7 +81,6 @@
   --color-text-muted: rgb(var(--color-text-muted));
   --color-text-faint: rgb(var(--color-text-faint));
 
-  /* Pulse Static Palette (Fallback) */
   --color-pulse-gold: #C8A97E;
   --color-pulse-gold-light: #E2C9A0;
   --color-pulse-gold-dark: #A88A5E;
@@ -108,23 +92,19 @@
   --color-pulse-amber: #E8C35A;
   --color-pulse-rose: #F48FB1;
 
-  /* Typography */
   --font-family-display: "Playfair Display", Georgia, serif;
   --font-family-mono: "DM Mono", "Fira Code", monospace;
   --font-family-sans: "DM Sans", system-ui, sans-serif;
 
-  /* Font sizes */
   --font-size-2xs: 0.625rem;
   --font-size-xs: 0.72rem;
 
-  /* Spacing */
   --spacing-18: 4.5rem;
   --spacing-22: 5.5rem;
   --spacing-72: 18rem;
   --spacing-84: 21rem;
   --spacing-96: 24rem;
 
-  /* Animations */
   --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
   --animate-fade-in: fade-in 0.4s ease-out forwards;
   --animate-slide-up: slide-up 0.3s ease-out forwards;
@@ -135,21 +115,16 @@
   --animate-spin-slow: spin 3s linear infinite;
   --animate-bounce-subtle: bounce-subtle 2s ease-in-out infinite;
 
-  /* Background images */
   --background-image-skeleton-gradient: linear-gradient(90deg, #111 25%, #1E1E1E 50%, #111 75%);
   --background-image-gold-gradient: linear-gradient(135deg, #C8A97E, #E2C9A0);
   --background-image-dark-mesh: radial-gradient(at 40% 20%, #1A1208 0px, transparent 50%),
                                  radial-gradient(at 80% 0%, #0A1A0A 0px, transparent 50%);
   --background-image-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
 
-  /* Breakpoints */
   --breakpoint-xs: 375px;
   --breakpoint-3xl: 1920px;
 }
 
-/* ============================================= */
-/* KEYFRAMES (custom animations)                 */
-/* ============================================= */
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 8px #C8A97E44; }
   50%      { box-shadow: 0 0 24px #C8A97E99, 0 0 48px #C8A97E33; }
@@ -190,9 +165,6 @@
   50%      { transform: translateY(-5px); }
 }
 
-/* ============================================= */
-/* BASE LAYER — GLOBAL RESETS & TYPOGRAPHY       */
-/* ============================================= */
 @layer base {
   *, *::before, *::after {
     box-sizing: border-box;
@@ -203,7 +175,6 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
-    /* Mencegah layout shifting saat modal terbuka */
     scrollbar-gutter: stable;
   }
 
@@ -212,11 +183,10 @@
     color: rgb(var(--color-text-primary));
     font-family: var(--font-family-sans);
     margin: 0;
-    min-height: 100dvh; /* Menggunakan dvh untuk kompatibilitas mobile browser terbaik */
+    min-height: 100dvh;
     overflow-x: hidden;
   }
 
-  /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -226,31 +196,27 @@
   }
   ::-webkit-scrollbar-thumb {
     background: rgb(var(--color-border));
-    border-radius: 9999px; /* Pill shape */
+    border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
     background: rgb(var(--color-text-muted));
   }
 
-  /* Focus ring (enterprise accessibility) */
   :focus-visible {
     outline: 2px solid rgb(var(--color-primary-base));
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
 
-  /* Selection color */
   ::selection {
     background: rgba(200, 169, 126, 0.3);
     color: rgb(var(--color-text-primary));
   }
 
-  /* Form elements reset */
   input, textarea, select, button {
     font: inherit;
   }
 
-  /* Range input styling */
   input[type="range"] {
     appearance: none;
     width: 100%;
@@ -273,7 +239,6 @@
     transform: scale(1.3);
   }
 
-  /* Remove number input spinners */
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
     opacity: 0;
@@ -281,9 +246,6 @@
   }
 }
 
-/* ============================================= */
-/* UTILITIES LAYER — CUSTOM UTILITY CLASSES      */
-/* ============================================= */
 @layer utilities {
   .glass {
     background: rgba(17, 17, 17, 0.7);
@@ -308,7 +270,6 @@
     animation: skeleton 1.5s ease-in-out infinite;
   }
 
-  /* Tooltip utility (pure CSS, enterprise) */
   .tooltip {
     position: relative;
     cursor: help;
@@ -337,7 +298,6 @@
     transform: translateX(-50%) translateY(-12px);
   }
 
-  /* Spinner loader */
   .spinner {
     width: 1.5rem;
     height: 1.5rem;
@@ -357,9 +317,6 @@
   }
 }
 
-/* ============================================= */
-/* COMPONENTS LAYER — REUSABLE COMPONENT STYLES  */
-/* ============================================= */
 @layer components {
   .card {
     background: rgb(var(--color-surface));
@@ -395,9 +352,6 @@
   }
 }
 
-/* ============================================= */
-/* VIEW TRANSITIONS API (modern browser)         */
-/* ============================================= */
 @layer utilities {
   ::view-transition-old(root),
   ::view-transition-new(root) {
@@ -437,9 +391,6 @@
   }
 }
 
-/* ============================================= */
-/* PRINT STYLES (enterprise reports)             */
-/* ============================================= */
 @media print {
   nav, footer, button, .no-print,
   input[type="range"], [role="status"], .glass {
@@ -472,9 +423,6 @@
   }
 }
 
-/* ============================================= */
-/* ACCESSIBILITY — REDUCED MOTION                */
-/* ============================================= */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -484,9 +432,6 @@
   }
 }
 
-/* ============================================= */
-/* HIGH CONTRAST MODE (forced colors)            */
-/* ============================================= */
 @media (forced-colors: active) {
   :root {
     --color-primary-base: 255 255 255;
