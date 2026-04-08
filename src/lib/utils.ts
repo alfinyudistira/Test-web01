@@ -1,8 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   PULSE UTILITY ENGINE — ENTERPRISE CORE v2.0
-   Pure functions | Type-safe | Tree-shakable | Universal
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import Fuse from 'fuse.js';
@@ -14,31 +9,20 @@ import type {
   Locale,
   HireDecision,
   CandidateScore,
-  PlatformConfig,
   ScoreValue,
+  Brand,
+  ISODate,
+  Result,
 } from '@/types';
 
-// ============================================================================
-// 1. UI & STYLING UTILITIES (dari Versi B + upgrade)
-// ============================================================================
-/**
- * Menggabungkan class Tailwind secara dinamis tanpa konflik.
- * Standar industri untuk component library.
- */
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
 
-/**
- * Conditional class helper (lebih ringan dari clsx untuk kasus sederhana)
- */
 export function cx(...classes: (string | boolean | undefined | null)[]): string {
   return classes.filter(Boolean).join(' ');
 }
 
-// ============================================================================
-// 2. SAFE FORMATTERS (dari Versi A)
-// ============================================================================
 export function safeFormat<T>(fn: () => T, fallback: T): T {
   try {
     return fn();
@@ -47,9 +31,15 @@ export function safeFormat<T>(fn: () => T, fallback: T): T {
   }
 }
 
-// ============================================================================
-// 3. INTERNATIONALIZATION (i18n) — gabungan A + B + upgrade
-// ============================================================================
+export function safeParseJSON<T>(jsonString: string): Result<T, Error> {
+  try {
+    const value = JSON.parse(jsonString) as T;
+    return Ok(value);
+  } catch (error) {
+    return Err(error instanceof Error ? error : new Error('Invalid JSON string'));
+  }
+}
+
 export function formatCurrency(
   value: number,
   currency: Currency = 'USD',
@@ -86,6 +76,8 @@ export function formatDate(
 export function formatRelativeTime(date: Date | string, locale: Locale = 'en-US'): string {
   const now = new Date();
   const target = typeof date === 'string' ? new Date(date) : date;
+  const isoString = typeof date === 'string' ? date : date.toISOString(); // BUG FIXED
+  
   const diffMs = now.getTime() - target.getTime();
   const diffSecs = Math.floor(diffMs / 1000);
   const diffMins = Math.floor(diffSecs / 60);
@@ -93,7 +85,7 @@ export function formatRelativeTime(date: Date | string, locale: Locale = 'en-US'
   const diffDays = Math.floor(diffHours / 24);
 
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
-  if (diffDays > 30) return formatDate(iso, locale);
+  if (diffDays > 30) return formatDate(isoString, locale);
   if (diffDays >= 7) return rtf.format(-Math.floor(diffDays / 7), 'week');
   if (diffDays >= 1) return rtf.format(-diffDays, 'day');
   if (diffHours >= 1) return rtf.format(-diffHours, 'hour');
@@ -119,15 +111,12 @@ export function pluralize(count: number, singular: string, plural?: string): str
   return count === 1 ? singular : (plural ?? `${singular}s`);
 }
 
-// ============================================================================
-// 4. DECISION ENGINE & SCORING (gabungan A + B + optimasi)
-// ============================================================================
 export function computeWeightedScore(
   scores: CandidateScore[],
   competencies: Competency[]
 ): number {
   if (!scores.length || !competencies.length) return 0;
-  // Normalisasi bobot jika tidak sum ke 1
+  
   const totalWeight = competencies.reduce((sum, c) => sum + (c.weight ?? 0), 0);
   const normalizedWeight = totalWeight === 0 ? 1 : totalWeight;
 
@@ -159,7 +148,7 @@ export function evaluateCandidate(
   } = options;
 
   const hardCompetencies = competencies.filter((c) => c.category === 'hard');
-  const criticalCompetencies = hardCompetencies.filter((c) => c.critical);
+  const criticalCompetencies = hardCompetencies.filter((c) => c.isCritical);
 
   const hasFailedCritical = criticalCompetencies.some((c) => {
     const score = candidate.scores.find((s) => s.competencyId === c.id)?.score ?? 0;
@@ -168,9 +157,8 @@ export function evaluateCandidate(
 
   const weightedScore = computeWeightedScore(candidate.scores, hardCompetencies);
 
-  // Culture bonus dari soft scores
   const cultureScore = candidate.softScores?.find((s) => String(s.competencyId) === 'culture')?.score ?? 3;
-  const cultureBonus = (cultureScore / 5) * 15; // max 15 points
+  const cultureBonus = (cultureScore / 5) * 15;
 
   let finalScore = weightedScore;
   if (!hasFailedCritical) {
@@ -234,9 +222,6 @@ export function evaluateCandidate(
   };
 }
 
-// ============================================================================
-// 5. CSV EXPORT & DOWNLOAD (dari Versi A)
-// ============================================================================
 export function exportCandidatesCSV(candidates: Candidate[], currency: Currency = 'USD'): void {
   if (!candidates.length) return;
 
@@ -245,7 +230,7 @@ export function exportCandidatesCSV(candidates: Candidate[], currency: Currency 
     .sort((a, b) => (b.weightedScore ?? 0) - (a.weightedScore ?? 0))
     .map((c, i) => [
       i + 1,
-      `"${c.name.replace(/"/g, '""')}"`,
+      `"${(c.name || c.firstName).replace(/"/g, '""')}"`,
       (c.weightedScore ?? 0).toFixed(2),
       typeof c.expectedSalary === 'number' ? c.expectedSalary : c.expectedSalary.amount,
       c.currency || currency,
@@ -254,7 +239,7 @@ export function exportCandidatesCSV(candidates: Candidate[], currency: Currency 
     ].join(','));
 
   const csv = [headers.join(','), ...rows].join('\n');
-  const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' }); // BOM for UTF-8
+  const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
   downloadBlob(blob, `candidates-${Date.now()}.csv`);
 }
 
@@ -273,9 +258,6 @@ export function downloadJson<T>(data: T, filename: string): void {
   downloadBlob(blob, filename);
 }
 
-// ============================================================================
-// 6. FUZZY MATCHING & TYPO CORRECTION (gabungan A + B)
-// ============================================================================
 const KNOWN_FIELD_ALIASES: Record<string, string> = {
   'full name': 'name',
   'nama': 'name',
@@ -331,10 +313,7 @@ export function correctTypo(input: string): string {
   return TYPO_MAP[input.toLowerCase()] ?? input;
 }
 
-// ============================================================================
-// 7. ASYNC & PERFORMANCE UTILITIES (dari A + B + upgrade)
-// ============================================================================
-export function debounce<T extends (...args: unknown[]) => unknown>(
+export function debounce<T extends (...args: any[]) => void>(
   fn: T,
   delay: number
 ): { (...args: Parameters<T>): void; cancel: () => void } {
@@ -347,7 +326,7 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
   return debounced;
 }
 
-export function throttle<T extends (...args: unknown[]) => unknown>(
+export function throttle<T extends (...args: any[]) => void>(
   fn: T,
   limit: number
 ): (...args: Parameters<T>) => void {
@@ -391,9 +370,6 @@ export function raceWithTimeout<T>(promise: Promise<T>, timeoutMs: number): Prom
   return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
 }
 
-// ============================================================================
-// 8. VIEW TRANSITIONS & HAPTICS (dari A + B)
-// ============================================================================
 export async function withViewTransition(fn: () => void | Promise<void>): Promise<void> {
   if (!document.startViewTransition) {
     await fn();
@@ -422,9 +398,6 @@ export function haptic(
   navigator.vibrate(patterns[type]);
 }
 
-// ============================================================================
-// 9. GENERIC HELPERS (dari A + upgrade)
-// ============================================================================
 export function uid(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -487,15 +460,11 @@ export function getInitials(name: string, maxInitials: number = 2): string {
     .toUpperCase();
 }
 
-// ============================================================================
-// 10. CLIPBOARD & DEVICE DETECTION
-// ============================================================================
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
     return true;
   } catch {
-    // Fallback for older browsers
     const textarea = document.createElement('textarea');
     textarea.value = text;
     document.body.appendChild(textarea);
@@ -514,7 +483,19 @@ export function isTouchDevice(): boolean {
   return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 }
 
-// ============================================================================
-// 11. RE-EXPORT (untuk kemudahan)
-// ============================================================================
+export function createId<T extends string>(id: string): Brand<string, T> {
+  return id as Brand<string, T>;
+}
+
+export function isISODate(value: unknown): value is ISODate {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/.test(value);
+}
+
+export const Ok = <T>(value: T): Result<T, never> => ({ ok: true, value });
+export const Err = <E>(error: E): Result<never, E> => ({ ok: false, error });
+
+export function isResultOk<T, E>(result: Result<T, E>): result is { ok: true; value: T } {
+  return result.ok === true;
+}
+
 export type { ScoreValue, HireDecision, DecisionResult };
