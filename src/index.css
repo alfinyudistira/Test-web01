@@ -14,13 +14,13 @@
   --color-border: 30 30 30;
   --color-muted: 42 42 42;
 
-  --color-primary: 200 169 126;
-  --color-secondary: 232 131 90;
-  --color-accent: 155 142 196;
+  --color-primary-base: 200 169 126;
+  --color-secondary-base: 232 131 90;
+  --color-accent-base: 155 142 196;
 
-  --color-success: 116 196 118;
-  --color-warning: 232 195 90;
-  --color-danger: 244 143 177;
+  --color-success-base: 116 196 118;
+  --color-warning-base: 232 195 90;
+  --color-danger-base: 244 143 177;
 
   --color-text-primary: 240 234 224;
   --color-text-secondary: 170 170 170;
@@ -40,7 +40,7 @@
   --shadow-glow: 0 0 20px rgba(200,169,126,0.25);
 }
 
-/* Light theme (optional, bisa diaktifkan via class) */
+/* Light theme (diaktifkan via class .light di tag html) */
 .light {
   --color-bg: 250 250 250;
   --color-surface: 255 255 255;
@@ -48,9 +48,9 @@
   --color-border: 229 229 229;
   --color-muted: 245 245 245;
 
-  --color-primary: 200 169 126;
-  --color-secondary: 232 131 90;
-  --color-accent: 155 142 196;
+  --color-primary-base: 200 169 126;
+  --color-secondary-base: 232 131 90;
+  --color-accent-base: 155 142 196;
 
   --color-text-primary: 23 23 23;
   --color-text-secondary: 82 82 82;
@@ -76,27 +76,27 @@
 /* TAILWIND v4 CUSTOM THEME (extend @theme)      */
 /* ============================================= */
 @theme {
-  /* Colors (mapping ke CSS variables untuk runtime switching) */
+  /* Colors (Dynamic Runtime Variables) */
   --color-background: rgb(var(--color-bg));
   --color-surface: rgb(var(--color-surface));
   --color-elevated: rgb(var(--color-elevated));
   --color-border: rgb(var(--color-border));
   --color-muted: rgb(var(--color-muted));
 
-  --color-primary: rgb(var(--color-primary));
-  --color-secondary: rgb(var(--color-secondary));
-  --color-accent: rgb(var(--color-accent));
+  --color-primary: rgb(var(--color-primary-base));
+  --color-secondary: rgb(var(--color-secondary-base));
+  --color-accent: rgb(var(--color-accent-base));
 
-  --color-success: rgb(var(--color-success));
-  --color-warning: rgb(var(--color-warning));
-  --color-danger: rgb(var(--color-danger));
+  --color-success: rgb(var(--color-success-base));
+  --color-warning: rgb(var(--color-warning-base));
+  --color-danger: rgb(var(--color-danger-base));
 
   --color-text-primary: rgb(var(--color-text-primary));
   --color-text-secondary: rgb(var(--color-text-secondary));
   --color-text-muted: rgb(var(--color-text-muted));
   --color-text-faint: rgb(var(--color-text-faint));
 
-  /* Pulse brand colors (static fallback) */
+  /* Pulse Static Palette (Fallback) */
   --color-pulse-gold: #C8A97E;
   --color-pulse-gold-light: #E2C9A0;
   --color-pulse-gold-dark: #A88A5E;
@@ -115,9 +115,7 @@
 
   /* Font sizes */
   --font-size-2xs: 0.625rem;
-  --line-height-2xs: 0.875rem;
   --font-size-xs: 0.72rem;
-  --line-height-xs: 1rem;
 
   /* Spacing */
   --spacing-18: 4.5rem;
@@ -125,13 +123,6 @@
   --spacing-72: 18rem;
   --spacing-84: 21rem;
   --spacing-96: 24rem;
-
-  /* Border radius */
-  --radius-4: 4px;
-  --radius-6: 6px;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
-  --radius-3xl: 2rem;
 
   /* Animations */
   --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
@@ -151,12 +142,9 @@
                                  radial-gradient(at 80% 0%, #0A1A0A 0px, transparent 50%);
   --background-image-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
 
-  /* Screens */
-  --screen-xs: 375px;
-  --screen-3xl: 1920px;
-
-  /* Transitions */
-  --transition-timing-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  /* Breakpoints */
+  --breakpoint-xs: 375px;
+  --breakpoint-3xl: 1920px;
 }
 
 /* ============================================= */
@@ -215,6 +203,8 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
+    /* Mencegah layout shifting saat modal terbuka */
+    scrollbar-gutter: stable;
   }
 
   body {
@@ -222,22 +212,21 @@
     color: rgb(var(--color-text-primary));
     font-family: var(--font-family-sans);
     margin: 0;
-    min-height: 100vh;
+    min-height: 100dvh; /* Menggunakan dvh untuk kompatibilitas mobile browser terbaik */
     overflow-x: hidden;
   }
 
-  /* Custom scrollbar (theme-aware, lebih halus) */
+  /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: rgb(var(--color-bg));
-    border-radius: 3px;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
     background: rgb(var(--color-border));
-    border-radius: 3px;
+    border-radius: 9999px; /* Pill shape */
   }
   ::-webkit-scrollbar-thumb:hover {
     background: rgb(var(--color-text-muted));
@@ -245,7 +234,7 @@
 
   /* Focus ring (enterprise accessibility) */
   :focus-visible {
-    outline: 2px solid rgb(var(--color-primary));
+    outline: 2px solid rgb(var(--color-primary-base));
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
@@ -261,7 +250,7 @@
     font: inherit;
   }
 
-  /* Range input styling (modern) */
+  /* Range input styling */
   input[type="range"] {
     appearance: none;
     width: 100%;
@@ -275,7 +264,7 @@
     width: 14px;
     height: 14px;
     border-radius: 999px;
-    background: rgb(var(--color-primary));
+    background: rgb(var(--color-primary-base));
     border: 2px solid rgb(var(--color-bg));
     cursor: pointer;
     transition: transform 0.1s ease;
@@ -296,10 +285,6 @@
 /* UTILITIES LAYER — CUSTOM UTILITY CLASSES      */
 /* ============================================= */
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
   .glass {
     background: rgba(17, 17, 17, 0.7);
     backdrop-filter: blur(12px);
@@ -357,7 +342,7 @@
     width: 1.5rem;
     height: 1.5rem;
     border: 2px solid rgb(var(--color-border));
-    border-top-color: rgb(var(--color-primary));
+    border-top-color: rgb(var(--color-primary-base));
     border-radius: 50%;
     animation: spin 0.6s linear infinite;
   }
@@ -365,7 +350,6 @@
     to { transform: rotate(360deg); }
   }
 
-  /* Flex & grid helpers */
   .flex-center {
     display: flex;
     align-items: center;
@@ -392,7 +376,7 @@
     padding: 1.5rem;
   }
   .btn-primary {
-    background: rgb(var(--color-primary));
+    background: rgb(var(--color-primary-base));
     color: #000;
     font-weight: 500;
     padding: 0.5rem 1rem;
@@ -505,7 +489,7 @@
 /* ============================================= */
 @media (forced-colors: active) {
   :root {
-    --color-primary: 255 255 255;
+    --color-primary-base: 255 255 255;
   }
   .btn-primary {
     border: 1px solid CanvasText;
