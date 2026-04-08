@@ -1,14 +1,17 @@
 {
   "compilerOptions": {
-    /* ========== TARGET & RUNTIME ========== */
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
+    "types": [
+      "vite/client",
+      "vitest/globals",
+      "@testing-library/jest-dom",
+      "vite-plugin-pwa/client"
+    ],
 
-    /* ========== STRICT MODE (MAXIMUM) ========== */
     "strict": true,
     "allowJs": false,
     "noImplicitAny": true,
@@ -25,12 +28,10 @@
     "noPropertyAccessFromIndexSignature": true,
     "forceConsistentCasingInFileNames": true,
 
-    /* ========== CODE QUALITY & LINT ========== */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "verbatimModuleSyntax": true,
 
-    /* ========== MODULE RESOLUTION (MODERN) ========== */
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -42,35 +43,23 @@
     "erasableSyntaxOnly": true,
     "customConditions": ["source"],
 
-    /* ========== PERFORMANCE & CACHE ========== */
     "skipLibCheck": true,
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/.cache/tsbuildinfo",
 
-    /* ========== PATH ALIASES (SYNC DENGAN VITE) ========== */
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@core/*": ["./src/core/*"],
-      "@app/*": ["./src/app/*"],
-      "@modules/*": ["./src/modules/*"],
-      "@features/*": ["./src/features/*"],
       "@components/*": ["./src/components/*"],
       "@ui/*": ["./src/components/ui/*"],
       "@hooks/*": ["./src/hooks/*"],
-      "@lib/*": ["./src/lib/*"],
-      "@utils/*": ["./src/utils/*"],
-      "@store/*": ["./src/store/*"],
-      "@services/*": ["./src/services/*"],
-      "@api/*": ["./src/api/*"],
-      "@config/*": ["./src/config/*"],
-      "@types/*": ["./src/types/*"],
       "@i18n/*": ["./src/i18n/*"],
-      "@routes/*": ["./src/routes/*"],
-      "@workers/*": ["./src/workers/*"]
+      "@lib/*": ["./src/lib/*"],
+      "@modules/*": ["./src/modules/*"],
+      "@store/*": ["./src/store/*"],
+      "@types/*": ["./src/types/*"]
     },
 
-    /* ========== BUILD & EMIT ========== */
     "useDefineForClassFields": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts", "src/**/*.json"],
