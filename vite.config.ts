@@ -6,21 +6,19 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { visualizer } from 'rollup-plugin-visualizer';
 import viteCompression from 'vite-plugin-compression';
 import legacy from '@vitejs/plugin-legacy';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 import path from 'path';
 import { z } from 'zod';
 
-// Helper untuk path absolut
 const r = (p: string) => path.resolve(__dirname, p);
-
-// Validasi environment variables (wajib untuk enterprise)
 const envSchema = z.object({
-  VITE_APP_NAME: z.string().default('Pulse Hiring Intelligence'),
+  VITE_APP_NAME: z.string().trim().default('Pulse Hiring Intelligence'),
   VITE_API_URL: z.string().url().optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  SENTRY_AUTH_TOKEN: z.string().optional(),
 });
 
 export default defineConfig(({ mode }) => {
-  // Load environment variables
   const env = loadEnv(mode, process.cwd(), '');
   const parsedEnv = envSchema.safeParse(env);
   
@@ -34,7 +32,6 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
-      // TanStack Router plugin (wajib di awal untuk code splitting)
       tanstackRouter({
         target: 'react',
         autoCodeSplitting: true,
@@ -42,17 +39,13 @@ export default defineConfig(({ mode }) => {
         generatedRouteTree: './src/routeTree.gen.ts',
       }),
 
-      // Tailwind CSS v4 (Rust engine, super cepat)
       tailwindcss(),
-
-      // React 19 + fast refresh + React Compiler
       react({
         babel: {
           plugins: isProd ? [['babel-plugin-react-compiler', { target: '19' }]] : [],
         },
       }),
 
-      // PWA enterprise-ready
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: 'auto',
@@ -60,7 +53,7 @@ export default defineConfig(({ mode }) => {
         manifest: {
           name: env.VITE_APP_NAME || 'Pulse Hiring Intelligence',
           short_name: 'PulseHR',
-          description: 'Universal SaaS Platform for Global Talent Acquisition',
+          description: 'Enterprise-Grade Universal SaaS Platform for Global Talent Acquisition',
           theme_color: '#0D0D0D',
           background_color: '#0D0D0D',
           display: 'standalone',
@@ -70,11 +63,6 @@ export default defineConfig(({ mode }) => {
           icons: [
             { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
             { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
-          ],
-          shortcuts: [
-            { name: 'Fit Calculator', url: '/calculator' },
-            { name: 'Scorecard', url: '/scorecard' },
-            { name: 'Talent Pool', url: '/talent-pool' },
           ],
         },
         workbox: {
@@ -97,37 +85,29 @@ export default defineConfig(({ mode }) => {
         devOptions: { enabled: isDev },
       }),
 
-      // Compression for production (gzip)
       isProd && viteCompression({ algorithm: 'gzip', threshold: 1024, deleteOriginalAssets: false }),
-
-      // Bundle visualizer (hanya jika ada flag VISUALIZE=true)
       process.env.VISUALIZE === 'true' && visualizer({ open: true, gzipSize: true, brotliSize: true }) as PluginOption,
-
-      // Legacy browser support (optional, tapi best practice untuk enterprise)
       isProd && legacy({ targets: ['defaults', 'not IE 11'], modernPolyfills: true }),
+      isProd && env.SENTRY_AUTH_TOKEN && sentryVitePlugin({
+        org: "pulse-org", // Ganti dengan org Sentry nanti
+        project: "pulse-hiring-intelligence", // Ganti dengan project Sentry nanti
+        authToken: env.SENTRY_AUTH_TOKEN,
+        telemetry: false,
+      }),
 
     ].filter(Boolean) as PluginOption[],
 
     resolve: {
       alias: {
         '@': r('./src'),
-        '@core': r('./src/core'),
-        '@app': r('./src/app'),
-        '@modules': r('./src/modules'),
-        '@features': r('./src/features'),
         '@components': r('./src/components'),
         '@ui': r('./src/components/ui'),
         '@hooks': r('./src/hooks'),
-        '@lib': r('./src/lib'),
-        '@utils': r('./src/utils'),
-        '@store': r('./src/store'),
-        '@services': r('./src/services'),
-        '@api': r('./src/api'),
-        '@config': r('./src/config'),
-        '@types': r('./src/types'),
         '@i18n': r('./src/i18n'),
-        '@routes': r('./src/routes'),
-        '@workers': r('./src/workers'),
+        '@lib': r('./src/lib'),
+        '@modules': r('./src/modules'),
+        '@store': r('./src/store'),
+        '@types': r('./src/types'),
       },
     },
 
@@ -179,6 +159,8 @@ export default defineConfig(({ mode }) => {
             'i18n': ['react-i18next', 'i18next', 'i18next-browser-languagedetector'],
             'toast': ['sonner'],
             'utils': ['date-fns', 'fuse.js', 'use-debounce', 'react-use'],
+            'sentry': ['@sentry/react'],
+            'security': ['dompurify'],
           },
           assetFileNames: 'assets/[name]-[hash][extname]',
           chunkFileNames: 'chunks/[name]-[hash].js',
