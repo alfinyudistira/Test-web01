@@ -1,102 +1,355 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// REDUX TOOLKIT SLICE — Hiring Pipeline (async ops, complex state machines)
-// Used alongside Zustand for heavy async/middleware requirements
-// ═══════════════════════════════════════════════════════════════════════════
-import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import type { Candidate, HireDecision } from '@/types';
+/* ═══════════════════════════════════════════════════════════════════════════
+   PULSE PIPELINE SLICE — Redux Toolkit Enterprise v2.1 (STRICT MODE)
+   AI-powered | Abortable | Memoized | Batch Selection | Cache-aware
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-// ── Async Thunks ──────────────────────────────────────────────────────────
-export const generateAISummary = createAsyncThunk(
-  'pipeline/generateAISummary',
-  async (payload: { candidate: string; round: string; notes: string }, { rejectWithValue }) => {
+import {
+  createSlice,
+  createAsyncThunk,
+  createSelector,
+  type PayloadAction,
+} from '@reduxjs/toolkit';
+import type { Candidate, HireDecision, CandidateId } from '@/types';
+import type { RootState } from './reduxStore'; // Import untuk mengetatkan Selector
+
+// ============================================================================
+// 1. TYPES & CONSTANTS
+// ============================================================================
+export type AsyncStatus = 'idle' | 'loading' | 'success' | 'failed' | 'aborting';
+
+export type AIContextType = 'recruitment_summary' | 'risk_assessment' | 'culture_fit';
+
+interface AISummaryPayload {
+  candidateId: CandidateId;
+  context: AIContextType;
+  notes: string;
+  round?: string;
+}
+
+interface AICacheEntry {
+  content: string;
+  timestamp: number;
+  context: AIContextType;
+}
+
+interface PipelineState {
+  // AI Module
+  aiContext: {
+    content: string;
+    status: AsyncStatus;
+    error: string | null;
+    lastGeneratedFor: CandidateId | null;
+  };
+  aiCache: Record<string, AICacheEntry>;
+
+  // View & Filter
+  viewOptions: {
+    searchQuery: string;
+    filterByDecision: HireDecision | 'ALL';
+    sortBy: keyof Candidate;
+    sortOrder: 'asc' | 'desc';
+    minScoreThreshold: number; // filter kandidat dengan weightedScore >= threshold
+  };
+
+  // Selection & Batch
+  selection: {
+    selectedIds: CandidateId[];
+    isBatchMode: boolean;
+    lastFocusedId: CandidateId | null;
+    highlightId: CandidateId | null; // untuk animasi scroll/focus
+  };
+}
+
+const CACHE_TTL = 5 * 60 * 1000; // 5 menit
+
+// Helper: cache key (Diekspor agar bisa di-tes dan dipakai di selector)
+export const buildCacheKey = (payload: Omit<AISummaryPayload, 'notes' | 'round'> & { notes?: string }): string =>
+  `${payload.candidateId}-${payload.context}-${(payload.notes || '').slice(0, 100)}`;
+
+// ============================================================================
+// 2. ASYNC THUNK (dengan abort + cache)
+// ============================================================================
+export const fetchCandidateAIInsights = createAsyncThunk<
+  { content: string; cacheKey: string },
+  AISummaryPayload,
+  { rejectValue: string; state: { pipeline: PipelineState } }
+>(
+  'pipeline/fetchAIInsights',
+  async (payload, { getState, signal, rejectWithValue }) => {
+    const state = getState().pipeline;
+    const cacheKey = buildCacheKey(payload);
+    const cached = state.aiCache[cacheKey];
+
+    // ✅ Cache hit & belum expired
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return { content: cached.content, cacheKey };
+    }
+
     try {
-      const res = await fetch('/api/claude', {
+      const controller = new AbortController();
+      signal.addEventListener('abort', () => controller.abort());
+
+      const response = await fetch('/api/v1/intelligence/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{
-            role: 'user',
-            content: `You are a senior HR professional. Write a concise 3-paragraph candidate summary for a hiring committee. Be professional, specific, and evidence-based. Candidate: ${payload.candidate}. Interview round: ${payload.round}.\n\nInterview notes:\n${payload.notes}\n\nFormat: Professional email summary, max 180 words, English only.`
-          }]
+          candidateId: payload.candidateId,
+          context: payload.context,
+          notes: payload.notes,
+          round: payload.round,
         }),
+        signal: controller.signal,
       });
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      const data = await res.json();
-      return data.content?.[0]?.text ?? 'No summary generated.';
-    } catch (err) {
-      return rejectWithValue((err as Error).message);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `AI Service Error ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.content || data.summary || 'No insight generated.';
+
+      return { content, cacheKey };
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return rejectWithValue('Request cancelled by user');
+      }
+      return rejectWithValue(err instanceof Error ? err.message : 'AI Engine failed to respond');
     }
   }
 );
 
-// ── State Shape ───────────────────────────────────────────────────────────
-interface PipelineState {
-  aiSummary: string;
-  aiSummaryStatus: 'idle' | 'loading' | 'success' | 'error';
-  aiSummaryError: string | null;
-  pipelineFilter: HireDecision | 'ALL';
-  sortField: keyof Candidate;
-  sortDir: 'asc' | 'desc';
-  searchQuery: string;
-  selectedIds: string[];
-  highlightId: string | null;
-}
-
+// ============================================================================
+// 3. INITIAL STATE
+// ============================================================================
 const initialState: PipelineState = {
-  aiSummary: '',
-  aiSummaryStatus: 'idle',
-  aiSummaryError: null,
-  pipelineFilter: 'ALL',
-  sortField: 'createdAt',
-  sortDir: 'desc',
-  searchQuery: '',
-  selectedIds: [],
-  highlightId: null,
+  aiContext: {
+    content: '',
+    status: 'idle',
+    error: null,
+    lastGeneratedFor: null,
+  },
+  aiCache: {},
+  viewOptions: {
+    searchQuery: '',
+    filterByDecision: 'ALL',
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+    minScoreThreshold: 0,
+  },
+  selection: {
+    selectedIds: [],
+    isBatchMode: false,
+    lastFocusedId: null,
+    highlightId: null,
+  },
 };
 
-// ── Slice ─────────────────────────────────────────────────────────────────
+// ============================================================================
+// 4. SLICE (dengan reducers lengkap)
+// ============================================================================
 const pipelineSlice = createSlice({
   name: 'pipeline',
   initialState,
   reducers: {
-    setFilter: (s, a: PayloadAction<HireDecision | 'ALL'>) => { s.pipelineFilter = a.payload; },
-    setSort: (s, a: PayloadAction<{ field: keyof Candidate; dir: 'asc' | 'desc' }>) => {
-      s.sortField = a.payload.field;
-      s.sortDir = a.payload.dir;
+    // ── Filter & Sort ──────────────────────────────────────────────
+    setSearchQuery: (state, action: PayloadAction<string>) => {
+      state.viewOptions.searchQuery = action.payload;
     },
-    setSearch: (s, a: PayloadAction<string>) => { s.searchQuery = a.payload; },
-    toggleSelect: (s, a: PayloadAction<string>) => {
-      const idx = s.selectedIds.indexOf(a.payload);
-      if (idx === -1) s.selectedIds.push(a.payload);
-      else s.selectedIds.splice(idx, 1);
+    setDecisionFilter: (state, action: PayloadAction<HireDecision | 'ALL'>) => {
+      state.viewOptions.filterByDecision = action.payload;
     },
-    clearSelection: (s) => { s.selectedIds = []; },
-    setHighlight: (s, a: PayloadAction<string | null>) => { s.highlightId = a.payload; },
-    clearAISummary: (s) => { s.aiSummary = ''; s.aiSummaryStatus = 'idle'; s.aiSummaryError = null; },
+    setSortConfiguration: (
+      state,
+      action: PayloadAction<{ field: keyof Candidate; order: 'asc' | 'desc' }>
+    ) => {
+      state.viewOptions.sortBy = action.payload.field;
+      state.viewOptions.sortOrder = action.payload.order;
+    },
+    setMinScoreThreshold: (state, action: PayloadAction<number>) => {
+      state.viewOptions.minScoreThreshold = Math.min(5, Math.max(0, action.payload));
+    },
+
+    // ── Selection (Batch Mode) ─────────────────────────────────────
+    toggleCandidateSelection: (state, action: PayloadAction<CandidateId>) => {
+      const id = action.payload;
+      const index = state.selection.selectedIds.indexOf(id);
+      if (index === -1) {
+        state.selection.selectedIds.push(id);
+      } else {
+        state.selection.selectedIds.splice(index, 1);
+      }
+      state.selection.isBatchMode = state.selection.selectedIds.length > 0;
+    },
+    selectMultiple: (state, action: PayloadAction<CandidateId[]>) => {
+      const newIds = action.payload.filter(id => !state.selection.selectedIds.includes(id));
+      state.selection.selectedIds.push(...newIds);
+      state.selection.isBatchMode = state.selection.selectedIds.length > 0;
+    },
+    clearSelection: (state) => {
+      state.selection.selectedIds = [];
+      state.selection.isBatchMode = false;
+    },
+    selectAllOnPage: (state, action: PayloadAction<CandidateId[]>) => {
+      state.selection.selectedIds = action.payload;
+      state.selection.isBatchMode = action.payload.length > 0;
+    },
+    setFocusedCandidate: (state, action: PayloadAction<CandidateId | null>) => {
+      state.selection.lastFocusedId = action.payload;
+    },
+    setHighlightId: (state, action: PayloadAction<CandidateId | null>) => {
+      state.selection.highlightId = action.payload;
+    },
+
+    // ── AI Module ──────────────────────────────────────────────────
+    resetAIModule: (state) => {
+      state.aiContext = initialState.aiContext;
+    },
+    clearAICache: (state) => {
+      state.aiCache = {};
+    },
+    clearSpecificCache: (state, action: PayloadAction<string>) => {
+      delete state.aiCache[action.payload];
+    },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(generateAISummary.pending, (s) => {
-        s.aiSummaryStatus = 'loading';
-        s.aiSummaryError = null;
+      .addCase(fetchCandidateAIInsights.pending, (state, action) => {
+        state.aiContext.status = 'loading';
+        state.aiContext.error = null;
+        state.aiContext.lastGeneratedFor = action.meta.arg.candidateId;
       })
-      .addCase(generateAISummary.fulfilled, (s, a) => {
-        s.aiSummaryStatus = 'success';
-        s.aiSummary = a.payload;
+      .addCase(fetchCandidateAIInsights.fulfilled, (state, action) => {
+        state.aiContext.status = 'success';
+        state.aiContext.content = action.payload.content;
+        state.aiCache[action.payload.cacheKey] = {
+          content: action.payload.content,
+          timestamp: Date.now(),
+          context: action.meta.arg.context,
+        };
       })
-      .addCase(generateAISummary.rejected, (s, a) => {
-        s.aiSummaryStatus = 'error';
-        s.aiSummaryError = a.payload as string;
+      .addCase(fetchCandidateAIInsights.rejected, (state, action) => {
+        state.aiContext.status = 'failed';
+        state.aiContext.error = action.payload ?? action.error?.message ?? 'Unknown error';
       });
   },
 });
 
+// ============================================================================
+// 5. MEMOIZED SELECTORS (PERFORMANCE CRITICAL)
+// ============================================================================
+const selectPipelineState = (state: RootState) => state.pipeline;
+
+// Base selectors
+export const selectViewOptions = createSelector(
+  [selectPipelineState],
+  (pipeline) => pipeline.viewOptions
+);
+export const selectSelection = createSelector(
+  [selectPipelineState],
+  (pipeline) => pipeline.selection
+);
+export const selectAIContext = createSelector(
+  [selectPipelineState],
+  (pipeline) => pipeline.aiContext
+);
+export const selectAICache = createSelector(
+  [selectPipelineState],
+  (pipeline) => pipeline.aiCache
+);
+
+// Core: Filtered + Sorted + Threshold Candidates
+export const selectProcessedCandidates = createSelector(
+  [
+    selectPipelineState,
+    (_state: RootState, candidates: Candidate[]) => candidates,
+  ],
+  (pipeline, candidates) => {
+    let result = [...candidates];
+
+    // 1. Filter by decision
+    if (pipeline.viewOptions.filterByDecision !== 'ALL') {
+      result = result.filter(c => c.decision === pipeline.viewOptions.filterByDecision);
+    }
+
+    // 2. Filter by search query (name) - Safe Fallback
+    const query = pipeline.viewOptions.searchQuery.trim().toLowerCase();
+    if (query) {
+      result = result.filter(c => (c.name || c.firstName || '').toLowerCase().includes(query));
+    }
+
+    // 3. Filter by min score threshold
+    if (pipeline.viewOptions.minScoreThreshold > 0) {
+      result = result.filter(c => (c.weightedScore ?? 0) >= pipeline.viewOptions.minScoreThreshold);
+    }
+
+    // 4. Sorting
+    const { sortBy, sortOrder } = pipeline.viewOptions;
+    const multiplier = sortOrder === 'asc' ? 1 : -1;
+    result.sort((a, b) => {
+      const aVal = a[sortBy];
+      const bVal = b[sortBy];
+      if (aVal === undefined && bVal === undefined) return 0;
+      if (aVal === undefined) return 1 * multiplier;
+      if (bVal === undefined) return -1 * multiplier;
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return (aVal - bVal) * multiplier;
+      }
+      return String(aVal).localeCompare(String(bVal)) * multiplier;
+    });
+
+    return result;
+  }
+);
+
+// Selected candidates (full objects)
+export const selectSelectedCandidates = createSelector(
+  [selectPipelineState, (_state: RootState, candidates: Candidate[]) => candidates],
+  (pipeline, candidates) => {
+    const ids = pipeline.selection.selectedIds;
+    return candidates.filter(c => ids.includes(c.id));
+  }
+);
+
+// Apakah semua kandidat di halaman terpilih?
+export const selectIsPageFullySelected = createSelector(
+  [selectPipelineState, (_state: RootState, pageCandidateIds: CandidateId[]) => pageCandidateIds],
+  (pipeline, pageIds) => {
+    if (pageIds.length === 0) return false;
+    return pageIds.every(id => pipeline.selection.selectedIds.includes(id));
+  }
+);
+
+// AI summary untuk candidate tertentu (dari cache) - Diperbaiki agar lebih aman
+export const selectCachedAIForCandidate = (candidateId: CandidateId, context: AIContextType) =>
+  createSelector(
+    [selectAICache],
+    (cache) => {
+      // Cari key yang berawalan kombinasi Id dan Context
+      const cacheKeyPrefix = `${candidateId}-${context}`;
+      const matchingKey = Object.keys(cache).find(key => key.startsWith(cacheKeyPrefix));
+      
+      return matchingKey ? cache[matchingKey]?.content ?? null : null;
+    }
+  );
+
+// ============================================================================
+// 6. EXPORT ACTIONS & REDUCER
+// ============================================================================
 export const {
-  setFilter, setSort, setSearch,
-  toggleSelect, clearSelection,
-  setHighlight, clearAISummary,
+  setSearchQuery,
+  setDecisionFilter,
+  setSortConfiguration,
+  setMinScoreThreshold,
+  toggleCandidateSelection,
+  selectMultiple,
+  clearSelection,
+  selectAllOnPage,
+  setFocusedCandidate,
+  setHighlightId,
+  resetAIModule,
+  clearAICache,
+  clearSpecificCache,
 } = pipelineSlice.actions;
 
 export default pipelineSlice.reducer;
