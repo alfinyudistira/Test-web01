@@ -1,0 +1,599 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   PULSE VELOCITY ENGINE — MODULE 02: FUNNEL SIMULATOR (ENTERPRISE)
+   Bottleneck AI | ROI projection | Scenario modeling | Kinetic funnel
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
+  ResponsiveContainer, AreaChart, Area, Legend, Cell, ReferenceLine
+} from 'recharts';
+import { useTranslation } from 'react-i18next';
+import { useConfig } from '@/store/appStore';
+import { formatters, cn, haptic, debounce } from '@/lib/utils';
+import { useHaptic, useIsMobile, useToast, useLocalStorage } from '@/hooks';
+import { Card, Button, Badge, Divider, ProgressBar, Tooltip as UITooltip, Kbd } from '@/components/ui';
+
+// ============================================================================
+// 1. CONSTANTS & CONFIGURATION
+// ============================================================================
+
+const COST_PER_OPEN_DAY_USD = 800; // Base cost per day of vacancy (USD)
+const STAGES = [
+  { id: 'sourcing',   label: 'Sourcing',   icon: '🔍', color: '#C8A97E', min: 1, max: 60, defaultVal: 20, optimMultiplier: 0.4, optimMin: 3 },
+  { id: 'screening',  label: 'Screening',  icon: '📋', color: '#7EB5A6', min: 1, max: 30, defaultVal: 10, optimMultiplier: 0.35, optimMin: 2 },
+  { id: 'interview',  label: 'Interview',  icon: '🎤', color: '#9B8EC4', min: 1, max: 90, defaultVal: 30, optimMultiplier: 0.55, optimMin: 5 },
+  { id: 'offer',      label: 'Offer',      icon: '🤝', color: '#74C476', min: 1, max: 30, defaultVal: 10, optimMultiplier: 0.45, optimMin: 2 },
+] as const;
+
+type StageId = typeof STAGES[number]['id'];
+
+// Skenario preset
+type Scenario = 'default' | 'aggressive' | 'balanced';
+const SCENARIOS: Record<Scenario, Record<StageId, number>> = {
+  default: Object.fromEntries(STAGES.map(s => [s.id, s.defaultVal])) as any,
+  aggressive: {
+    sourcing: 8,
+    screening: 4,
+    interview: 12,
+    offer: 3,
+  },
+  balanced: {
+    sourcing: 12,
+    screening: 6,
+    interview: 18,
+    offer: 5,
+  },
+};
+
+// ============================================================================
+// 2. HELPER: FUNNEL SEGMENT (kinetic bar dari versi B)
+// ============================================================================
+interface FunnelSegmentProps {
+  label: string;
+  icon: string;
+  current: number;
+  optimized: number;
+  color: string;
+  index: number;
+  bottleneckImpact?: number; // tambahan dari saya: dampak bottleneck (hari)
+}
+
+function FunnelSegment({ label, icon, current, optimized, color, index, bottleneckImpact }: FunnelSegmentProps) {
+  const diff = current - optimized;
+  const pctSaved = current > 0 ? Math.round((diff / current) * 100) : 0;
+  const percentWidth = current > 0 ? (optimized / current) * 100 : 0;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.1 }}
+      className="group relative"
+    >
+      <div className="flex justify-between items-end mb-2 px-1">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{icon}</span>
+            <span className="font-mono text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{label}</span>
+            {bottleneckImpact && bottleneckImpact > 0 && (
+              <UITooltip content={`Bottleneck: +${bottleneckImpact} days over optimal`}>
+                <span className="text-red-500 text-[9px] font-mono font-bold">⚠️</span>
+              </UITooltip>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xl font-black text-white">{current}d</span>
+            {diff > 0 && <Badge variant="success" className="animate-pulse">-{pctSaved}%</Badge>}
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="font-mono text-[9px] text-zinc-600 uppercase">Target Velocity</p>
+          <p className="text-sm font-bold" style={{ color }}>{optimized}d</p>
+        </div>
+      </div>
+
+      {/* Bar container */}
+      <div className="relative h-12 w-full bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden backdrop-blur-sm">
+        {/* Current state background */}
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: '100%' }}
+          className="absolute inset-y-0 left-0 bg-white/5"
+        />
+        {/* Optimized bar */}
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${percentWidth}%` }}
+          transition={{ type: 'spring', damping: 20, stiffness: 100, delay: 0.5 + index * 0.1 }}
+          className="absolute inset-y-0 left-0 shadow-lg"
+          style={{ backgroundColor: color }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent" />
+        </motion.div>
+        {/* Efficiency label */}
+        <div className="absolute inset-y-0 right-4 flex items-center">
+          <span className="font-mono text-[10px] font-bold text-white/20 uppercase tracking-tighter">
+            Gap: {diff}d
+          </span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ============================================================================
+// 3. MAIN FUNNEL MODULE
+// ============================================================================
+export function FunnelChart() {
+  const { t } = useTranslation();
+  const config = useConfig();
+  const triggerHaptic = useHaptic();
+  const toast = useToast();
+  const isMobile = useIsMobile();
+
+  // ── State ──────────────────────────────────────────────────────────────
+  const [values, setValues] = useState<Record<StageId, number>>(() => ({ ...SCENARIOS.default }));
+  const [avgAnnualSalary, setAvgAnnualSalary] = useLocalStorage('funnel_salary', 85000);
+  const [hiresPerYear, setHiresPerYear] = useLocalStorage('funnel_hires', 24);
+  const [targetMode, setTargetMode] = useState(false);
+  const [targetTTH, setTargetTTH] = useState(25);
+  const [scenario, setScenario] = useState<Scenario>('default');
+
+  // ── Optimized values (Pulse Framework) ─────────────────────────────────
+  const optimizedValues = useMemo(() => {
+    return Object.fromEntries(
+      STAGES.map(s => [s.id, Math.max(Math.round(values[s.id] * s.optimMultiplier), s.optimMin)])
+    ) as Record<StageId, number>;
+  }, [values]);
+
+  // Aggressive scenario (for comparison)
+  const aggressiveValues = useMemo(() => {
+    return Object.fromEntries(
+      STAGES.map(s => [s.id, Math.max(Math.round(values[s.id] * 0.3), 1)])
+    ) as Record<StageId, number>;
+  }, [values]);
+
+  // ── Analytics Engine ───────────────────────────────────────────────────
+  const analytics = useMemo(() => {
+    const currentTotal = Object.values(values).reduce((a, b) => a + b, 0);
+    const optimizedTotal = Object.values(optimizedValues).reduce((a, b) => a + b, 0);
+    const aggressiveTotal = Object.values(aggressiveValues).reduce((a, b) => a + b, 0);
+    const daysSavedPerHire = currentTotal - optimizedTotal;
+    const daysSavedYear = daysSavedPerHire * hiresPerYear;
+
+    // Cost of vacancy model: daily cost = (annual salary * 1.5) / 260 workdays
+    const dailyCostOfVacancy = (avgAnnualSalary * 1.5) / 260;
+    const savingsPerHire = daysSavedPerHire * dailyCostOfVacancy;
+    const totalAnnualImpact = savingsPerHire * hiresPerYear;
+
+    // Bottleneck detection: stage with largest gap
+    let bottleneckStage = STAGES[0];
+    let maxGap = 0;
+    for (const s of STAGES) {
+      const gap = values[s.id] - optimizedValues[s.id];
+      if (gap > maxGap) {
+        maxGap = gap;
+        bottleneckStage = s;
+      }
+    }
+
+    // Sensitivity: impact per stage
+    const sensitivity = STAGES.map(s => {
+      const impact = (values[s.id] - optimizedValues[s.id]) * dailyCostOfVacancy * hiresPerYear;
+      return { stage: s.label, impact, icon: s.icon };
+    }).sort((a, b) => b.impact - a.impact);
+
+    return {
+      currentTotal,
+      optimizedTotal,
+      aggressiveTotal,
+      daysSavedPerHire,
+      daysSavedYear,
+      savingsPerHire,
+      totalAnnualImpact,
+      dailyCostOfVacancy,
+      pctImprovement: currentTotal > 0 ? Math.round((daysSavedPerHire / currentTotal) * 100) : 0,
+      bottleneck: { stage: bottleneckStage.label, gap: maxGap, color: bottleneckStage.color },
+      sensitivity,
+    };
+  }, [values, optimizedValues, aggressiveValues, avgAnnualSalary, hiresPerYear]);
+
+  // ── Target mode distribution ──────────────────────────────────────────
+  const targetSuggestion = useMemo(() => {
+    if (!targetMode) return null;
+    const ratio = targetTTH / analytics.currentTotal;
+    const suggestion = Object.fromEntries(
+      STAGES.map(s => [s.id, Math.max(Math.round(values[s.id] * ratio), s.optimMin)])
+    ) as Record<StageId, number>;
+    return suggestion;
+  }, [targetMode, targetTTH, values, analytics.currentTotal]);
+
+  // ── Handlers ───────────────────────────────────────────────────────────
+  const handleSliderChange = useCallback((id: StageId, val: number) => {
+    triggerHaptic('light');
+    setValues(prev => ({ ...prev, [id]: val }));
+    // Auto-disable target mode ketika user menggeser manual
+    if (targetMode) setTargetMode(false);
+  }, [triggerHaptic, targetMode]);
+
+  const applyScenario = useCallback((sc: Scenario) => {
+    setValues({ ...SCENARIOS[sc] });
+    setScenario(sc);
+    toast.info(`Scenario "${sc}" applied`);
+    triggerHaptic('medium');
+  }, [toast, triggerHaptic]);
+
+  const resetToDefault = useCallback(() => {
+    setValues({ ...SCENARIOS.default });
+    setScenario('default');
+    setTargetMode(false);
+    toast.info('Reset to default values');
+    triggerHaptic('medium');
+  }, [toast, triggerHaptic]);
+
+  const copyReport = useCallback(() => {
+    const report = `Pulse Hiring Funnel Report
+Current TTH: ${analytics.currentTotal} days
+Optimized TTH: ${analytics.optimizedTotal} days (${analytics.pctImprovement}% improvement)
+Annual Savings: ${formatters.currency(analytics.totalAnnualImpact, config.currency)}
+Bottleneck: ${analytics.bottleneck.stage} (+${analytics.bottleneck.gap} days)
+Sensitivity: ${analytics.sensitivity[0]?.stage || ''} (${formatters.currency(analytics.sensitivity[0]?.impact || 0, config.currency)})`;
+    navigator.clipboard.writeText(report);
+    toast.success('Executive report copied to clipboard');
+    triggerHaptic('success');
+  }, [analytics, config.currency, toast, triggerHaptic]);
+
+  const exportSnapshot = useCallback(() => {
+    const snapshot = {
+      timestamp: new Date().toISOString(),
+      scenario,
+      values,
+      optimizedValues,
+      aggressiveValues,
+      analytics: {
+        currentTotal: analytics.currentTotal,
+        optimizedTotal: analytics.optimizedTotal,
+        daysSavedPerHire: analytics.daysSavedPerHire,
+        totalAnnualImpact: analytics.totalAnnualImpact,
+        bottleneck: analytics.bottleneck,
+      },
+      hiresPerYear,
+      avgAnnualSalary,
+    };
+    const dataStr = JSON.stringify(snapshot, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `funnel-snapshot-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Snapshot exported');
+  }, [scenario, values, optimizedValues, aggressiveValues, analytics, hiresPerYear, avgAnnualSalary, toast]);
+
+  // Data untuk bar chart perbandingan (versi A)
+  const barChartData = useMemo(() => STAGES.map(s => ({
+    name: s.label,
+    current: values[s.id],
+    optimized: optimizedValues[s.id],
+    aggressive: aggressiveValues[s.id],
+  })), [values, optimizedValues, aggressiveValues]);
+
+  // Data untuk area chart kumulatif (versi B)
+  const areaChartData = useMemo(() => {
+    let cumCurrent = 0;
+    let cumOptim = 0;
+    return STAGES.map(s => {
+      cumCurrent += values[s.id];
+      cumOptim += optimizedValues[s.id];
+      return {
+        name: s.label,
+        current: cumCurrent,
+        optimized: cumOptim,
+      };
+    });
+  }, [values, optimizedValues]);
+
+  // Risk detection (versi A)
+  const isOverOptimized = analytics.aggressiveTotal < 12;
+
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 pb-20">
+      {/* LEFT PANEL: CONTROLS & SIMULATION (5/12) */}
+      <div className="xl:col-span-5 space-y-6">
+        <div className="space-y-1 mb-6">
+          <Badge variant="gold">Funnel Intelligence</Badge>
+          <h2 className="font-display text-3xl font-black text-white tracking-tight">Velocity Simulator</h2>
+          <p className="text-sm text-zinc-500 leading-relaxed">
+            Adjust stage durations to see real-time impact on hiring velocity and ROI.
+          </p>
+        </div>
+
+        {/* Scenario presets */}
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant={scenario === 'default' ? 'primary' : 'secondary'} onClick={() => applyScenario('default')}>
+            Default
+          </Button>
+          <Button size="sm" variant={scenario === 'balanced' ? 'primary' : 'secondary'} onClick={() => applyScenario('balanced')}>
+            Balanced
+          </Button>
+          <Button size="sm" variant={scenario === 'aggressive' ? 'primary' : 'secondary'} onClick={() => applyScenario('aggressive')}>
+            🚀 Aggressive
+          </Button>
+          <Button size="sm" variant="ghost" onClick={resetToDefault}>
+            Reset
+          </Button>
+        </div>
+
+        {/* ROI Parameters */}
+        <Card className="p-6 space-y-4">
+          <h3 className="font-display text-sm font-bold text-white">Financial Parameters</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="font-mono text-[9px] text-zinc-500 uppercase tracking-widest block mb-1">Avg. Annual Salary</label>
+              <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+                <span className="text-zinc-400 text-sm">$</span>
+                <input
+                  type="number"
+                  value={avgAnnualSalary}
+                  onChange={(e) => setAvgAnnualSalary(Number(e.target.value))}
+                  className="bg-transparent text-white text-sm focus:outline-none w-full"
+                  step={1000}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="font-mono text-[9px] text-zinc-500 uppercase tracking-widest block mb-1">Hires / Year</label>
+              <input
+                type="number"
+                value={hiresPerYear}
+                onChange={(e) => setHiresPerYear(Number(e.target.value))}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white"
+                step={1}
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* Stage Sliders */}
+        <Card className="p-6 space-y-6">
+          <h3 className="font-display text-sm font-bold text-white">Process Stages</h3>
+          {STAGES.map((s) => (
+            <div key={s.id} className="space-y-2">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{s.icon}</span>
+                  <span className="font-mono text-xs text-zinc-300">{s.label}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-bold text-white bg-white/5 px-2 py-0.5 rounded-full">
+                    {values[s.id]}d
+                  </span>
+                  {optimizedValues[s.id] < values[s.id] && (
+                    <span className="text-emerald-500 text-[10px] font-mono">-{values[s.id] - optimizedValues[s.id]}d</span>
+                  )}
+                </div>
+              </div>
+              <input
+                type="range"
+                min={s.min}
+                max={s.max}
+                value={values[s.id]}
+                onChange={(e) => handleSliderChange(s.id, Number(e.target.value))}
+                className="w-full h-1.5 bg-zinc-800 rounded-full appearance-none cursor-pointer"
+                style={{ accentColor: s.color }}
+                aria-label={`${s.label} duration in days`}
+              />
+              <div className="flex justify-between text-2xs text-zinc-600">
+                <span>{s.min}d</span>
+                <span>Pulse target: {optimizedValues[s.id]}d</span>
+                <span>{s.max}d</span>
+              </div>
+            </div>
+          ))}
+        </Card>
+
+        {/* Target Mode (versi A) */}
+        <Card className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-display text-sm font-bold text-white">Target Mode</h3>
+            <Button size="xs" variant="glass" onClick={() => setTargetMode(!targetMode)}>
+              {targetMode ? 'Disable' : 'Enable'}
+            </Button>
+          </div>
+          {targetMode && (
+            <div className="space-y-3">
+              <label className="font-mono text-[10px] text-zinc-400">Target Total TTH (days)</label>
+              <input
+                type="number"
+                value={targetTTH}
+                onChange={(e) => setTargetTTH(Number(e.target.value))}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white"
+                min={10}
+                max={100}
+              />
+              {targetSuggestion && (
+                <div className="mt-3 p-3 bg-white/[0.02] rounded-xl">
+                  <p className="text-2xs font-mono text-zinc-400 mb-1">Suggested distribution:</p>
+                  <pre className="text-2xs font-mono text-zinc-300">
+                    {Object.entries(targetSuggestion).map(([k, v]) => `${k}: ${v}d`).join(', ')}
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          <Button variant="primary" className="flex-1" onClick={copyReport}>
+            📋 Copy Summary
+          </Button>
+          <Button variant="secondary" onClick={exportSnapshot}>
+            💾 Export JSON
+          </Button>
+        </div>
+      </div>
+
+      {/* RIGHT PANEL: ANALYTICS & VISUALS (7/12) */}
+      <div className="xl:col-span-7 space-y-8 sticky top-24 h-fit">
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card className="p-5 text-center border-emerald-500/20 bg-emerald-500/5">
+            <p className="font-mono text-[9px] text-emerald-500 uppercase tracking-widest">Cycle Time Reduction</p>
+            <h4 className="text-3xl font-black text-white mt-1">-{analytics.pctImprovement}%</h4>
+            <p className="text-2xs text-zinc-500 mt-1">{analytics.currentTotal}d → {analytics.optimizedTotal}d</p>
+          </Card>
+          <Card className="p-5 text-center border-[var(--primary)]/20 bg-[var(--primary)]/5">
+            <p className="font-mono text-[9px] text-[var(--primary)] uppercase tracking-widest">Days Recovered / Year</p>
+            <h4 className="text-3xl font-black text-white mt-1">{analytics.daysSavedYear}d</h4>
+            <p className="text-2xs text-zinc-500 mt-1">Per hire: +{analytics.daysSavedPerHire}d</p>
+          </Card>
+          <Card className="p-5 text-center border-blue-500/20 bg-blue-500/5">
+            <p className="font-mono text-[9px] text-blue-500 uppercase tracking-widest">Annual Impact</p>
+            <h4 className="text-3xl font-black text-white mt-1">
+              {formatters.currency(analytics.totalAnnualImpact, config.currency).replace('.00', '')}
+            </h4>
+          </Card>
+        </div>
+
+        {/* Kinetic Funnel Segments */}
+        <Card className="p-6 space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="font-display text-lg font-bold text-white">Kinetic Velocity Analysis</h3>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-white/20" />
+                <span className="font-mono text-[9px] text-zinc-500">Current</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-[var(--primary)]" />
+                <span className="font-mono text-[9px] text-zinc-500">Pulse Target</span>
+              </div>
+            </div>
+          </div>
+          {STAGES.map((s, idx) => {
+            const gap = values[s.id] - optimizedValues[s.id];
+            const bottleneckImpact = analytics.bottleneck.stage === s.label ? gap : 0;
+            return (
+              <FunnelSegment
+                key={s.id}
+                label={s.label}
+                icon={s.icon}
+                current={values[s.id]}
+                optimized={optimizedValues[s.id]}
+                color={s.color}
+                index={idx}
+                bottleneckImpact={bottleneckImpact}
+              />
+            );
+          })}
+          <div className="pt-4 border-t border-white/5 flex justify-between items-center">
+            <div>
+              <p className="font-mono text-[10px] text-zinc-500 uppercase">Total Time-to-Hire</p>
+              <p className="text-2xl font-black text-white">{analytics.currentTotal} days</p>
+            </div>
+            <div className="text-right">
+              <p className="font-mono text-[10px] text-zinc-500 uppercase">Daily Cost of Vacancy</p>
+              <p className="text-xl font-bold text-emerald-500">{formatters.currency(analytics.dailyCostOfVacancy, config.currency)}</p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Bottleneck & Sensitivity (versi A) */}
+        <Card className="p-6">
+          <h3 className="font-display text-lg font-bold text-white mb-4">Bottleneck & ROI Drivers</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <p className="font-mono text-[9px] text-zinc-500 uppercase">Critical Constraint</p>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-500">⚠️</div>
+                <div>
+                  <p className="font-bold text-white">{analytics.bottleneck.stage}</p>
+                  <p className="text-2xs text-zinc-400">+{analytics.bottleneck.gap} days over optimal</p>
+                </div>
+              </div>
+            </div>
+            <div>
+              <p className="font-mono text-[9px] text-zinc-500 uppercase mb-2">Top ROI Driver</p>
+              {analytics.sensitivity[0] && (
+                <div className="flex justify-between items-center">
+                  <span>{analytics.sensitivity[0].icon} {analytics.sensitivity[0].stage}</span>
+                  <span className="text-emerald-500 font-mono text-xs">
+                    {formatters.currency(analytics.sensitivity[0].impact, config.currency)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          <Divider className="my-4" />
+          <div className="space-y-1">
+            <p className="font-mono text-[9px] text-zinc-500 uppercase">Sensitivity Analysis (Annual Impact)</p>
+            {analytics.sensitivity.slice(0, 3).map((s, i) => (
+              <div key={s.stage} className="flex justify-between text-sm">
+                <span>{s.icon} {s.stage}</span>
+                <span className="font-mono text-xs">{formatters.currency(s.impact, config.currency)}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Bar Chart Comparison (Versi A) */}
+        <Card className="p-6">
+          <h3 className="font-display text-lg font-bold text-white mb-4">Scenario Comparison</h3>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={barChartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+              <XAxis dataKey="name" tick={{ fill: '#a1a1aa', fontSize: 10 }} />
+              <YAxis tick={{ fill: '#a1a1aa', fontSize: 10 }} />
+              <RechartsTooltip
+                contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a', borderRadius: '12px' }}
+                labelStyle={{ color: '#e4e4e7' }}
+              />
+              <Legend />
+              <Bar dataKey="current" name="Current" fill="#E8835A" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="optimized" name="Pulse Optimized" fill="#C8A97E" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="aggressive" name="Aggressive" fill="#74C476" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+
+        {/* Area Chart Cumulative (Versi B) */}
+        <Card className="p-6">
+          <h3 className="font-display text-lg font-bold text-white mb-4">Cumulative Timeline</h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <AreaChart data={areaChartData}>
+              <defs>
+                <linearGradient id="gradCurrent" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ffffff" stopOpacity={0.1} />
+                  <stop offset="95%" stopColor="#ffffff" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gradOptim" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={config.branding.primaryColor} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={config.branding.primaryColor} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+              <XAxis dataKey="name" tick={{ fill: '#a1a1aa', fontSize: 10 }} />
+              <YAxis tick={{ fill: '#a1a1aa', fontSize: 10 }} />
+              <RechartsTooltip
+                contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a', borderRadius: '12px' }}
+              />
+              <Area type="monotone" dataKey="current" name="Current" stroke="#52525b" fill="url(#gradCurrent)" strokeWidth={2} />
+              <Area type="monotone" dataKey="optimized" name="Pulse Target" stroke={config.branding.primaryColor} fill="url(#gradOptim)" strokeWidth={3} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Card>
+
+        {/* Risk Detection (Versi A) */}
+        {isOverOptimized && (
+          <Alert variant="warning" className="border-amber-500/30 bg-amber-500/5">
+            ⚠️ Over-optimization risk: Aggressive scenario may compromise candidate quality.
+          </Alert>
+        )}
+      </div>
+    </div>
+  );
+}
