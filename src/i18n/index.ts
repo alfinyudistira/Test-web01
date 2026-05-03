@@ -1,16 +1,8 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   PULSE GLOBALIZATION ENGINE — ENTERPRISE i18n v3.0
-   Type-safe | Lazy-loading | RTL-aware | Multi-tenant | Reactive
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import type { Locale } from '@/types';
 
-// ============================================================================
-// 1. TRANSLATION SCHEMA (Single Source of Truth — Bahasa Inggris)
-// ============================================================================
 const enTranslation = {
   app: {
     name: 'Pulse Hiring Intelligence',
@@ -92,11 +84,7 @@ export type NestedKey<T> = T extends object
   : never;
 export type I18nKey = NestedKey<typeof enTranslation>;
 
-// ============================================================================
-// 2. LANGUAGE METADATA
-// ============================================================================
 export type LanguageCode = 'en' | 'id' | 'de' | 'fr' | 'ja' | 'zh-CN' | 'ar';
-
 export interface LanguageMeta {
   code: LanguageCode;
   label: string;
@@ -115,9 +103,6 @@ export const SUPPORTED_LANGUAGES: LanguageMeta[] = [
   { code: 'ar', label: 'العربية', flag: '🇸🇦', dir: 'rtl', locale: 'ar-SA' },
 ];
 
-// ============================================================================
-// 3. BASE RESOURCES (inline untuk bahasa yang sudah lengkap)
-// ============================================================================
 const idTranslation: typeof enTranslation = {
   app: { ...enTranslation.app, tagline: 'Platform Rekrutmen Kelas Enterprise' },
   nav: {
@@ -192,9 +177,6 @@ const resources: Partial<Record<LanguageCode, { translation: typeof enTranslatio
   id: { translation: idTranslation },
 };
 
-// ============================================================================
-// 4. LAZY LOADER (untuk namespace tambahan atau bahasa yang tidak di-inline)
-// ============================================================================
 const loadedNamespaces = new Map<string, number>(); // key = "lang:ns", value = timestamp
 const NAMESPACE_TTL = 5 * 60 * 1000; // 5 menit
 
@@ -220,9 +202,6 @@ export async function loadLanguage(lang: LanguageCode): Promise<void> {
   applyDirection(lang);
 }
 
-// ============================================================================
-// 5. RTL HANDLER & DIRECTION
-// ============================================================================
 export function applyDirection(lang: LanguageCode): void {
   const meta = SUPPORTED_LANGUAGES.find((l) => l.code === lang);
   if (meta) {
@@ -231,9 +210,6 @@ export function applyDirection(lang: LanguageCode): void {
   }
 }
 
-// ============================================================================
-// 6. LANGUAGE SWITCH & HELPERS
-// ============================================================================
 export async function setLanguage(lang: LanguageCode): Promise<void> {
   localStorage.setItem('pulse_lang', lang);
   await loadLanguage(lang);
@@ -254,9 +230,6 @@ export function tSafe(key: string, fallback?: string): string {
   return result;
 }
 
-// ============================================================================
-// 7. EVENT EMITTER (reactive)
-// ============================================================================
 type LanguageChangeListener = (lang: LanguageCode) => void;
 const langListeners = new Set<LanguageChangeListener>();
 
@@ -269,9 +242,6 @@ function emitLanguageChange(lang: LanguageCode): void {
   langListeners.forEach((fn) => fn(lang));
 }
 
-// ============================================================================
-// 8. MULTI-TENANT OVERRIDE
-// ============================================================================
 export function injectTenantTranslations(
   lang: LanguageCode,
   namespace: string,
@@ -280,9 +250,6 @@ export function injectTenantTranslations(
   i18n.addResourceBundle(lang, namespace, data, true, true);
 }
 
-// ============================================================================
-// 9. FORMATTERS (integrasi dengan i18n locale)
-// ============================================================================
 export function formatCurrency(
   value: number,
   currency: string = 'USD',
@@ -310,9 +277,6 @@ export function formatNumber(value: number, locale?: string): string {
   return new Intl.NumberFormat(l).format(value);
 }
 
-// ============================================================================
-// 10. INITIALIZATION
-// ============================================================================
 let initialized = false;
 
 export async function initI18n(options?: { fallbackLng?: LanguageCode; debug?: boolean }): Promise<void> {
@@ -355,37 +319,4 @@ export async function initI18n(options?: { fallbackLng?: LanguageCode; debug?: b
 // 11. EXPORT INSTANCE & TYPES
 // ============================================================================
 export default i18n;
-export type { LanguageCode, Locale };قييمات', stats_strong: 'توظيف قوي', stats_avg: 'متوسط الدرجات' },
-      common: { score: 'الدرجة', save: 'حفظ', cancel: 'إلغاء', reset: 'إعادة تعيين', export: 'تصدير', loading: 'جاري التحميل…', error: 'حدث خطأ.', empty: 'لا توجد بيانات.', days: 'أيام', months: 'أشهر', within_budget: '✅ ضمن الميزانية', over_budget: '⚠️ تجاوز الميزانية', fill_all: 'يرجى ملء جميع الحقول.' },
-      calculator: { title: 'حاسبة ملاءمة المرشح', subtitle: 'الوحدة 01 — التقييم التنبؤي', candidateName: 'اسم المرشح', expectedSalary: 'الراتب المتوقع', save: 'حفظ ومقارنة المرشح التالي', reset: 'إعادة تعيين دون حفظ', export_csv: 'تنزيل CSV', compare: 'مقارنة مباشرة', decision_strong: 'توظيف قوي', decision_hire: 'توظيف', decision_maybe: 'ربما', decision_no: 'لا توظيف', decision_critical: 'لا توظيف — فشل في المعيار الحاسم' },
-      toast: { strong_hire: '🏆 تم حفظ التوظيف القوي في القائمة المختصرة!', hire: '✓ تم حفظ المرشح في مجموعة المقارنة', maybe: '⚠️ تم حفظ المرشح — يُنصح بالمراجعة', reset: 'تم إعادة تعيين سجل البيانات!', exported: 'تم تصدير البيانات بنجاح', error_export: 'لا توجد بيانات للتصدير!', copied: 'تم النسخ إلى الحافظة!' },
-    }
-  },
-};
-
-i18n
-  .use(LanguageDetector)
-  .use(initReactI18next)
-  .init({
-    resources,
-    fallbackLng: 'en',
-    supportedLngs: ['en', 'id', 'de', 'fr', 'ja', 'zh-CN', 'ar'],
-    interpolation: { escapeValue: false },
-    detection: {
-      order: ['querystring', 'navigator', 'htmlTag'],
-      caches: ['localStorage'],
-    },
-  });
-
-export default i18n;
-
-// Language metadata for the Settings UI
-export const SUPPORTED_LANGUAGES = [
-  { code: 'en',    label: 'English',    flag: '🇺🇸', dir: 'ltr', locale: 'en-US' },
-  { code: 'id',    label: 'Bahasa Indonesia', flag: '🇮🇩', dir: 'ltr', locale: 'id-ID' },
-  { code: 'de',    label: 'Deutsch',    flag: '🇩🇪', dir: 'ltr', locale: 'de-DE' },
-  { code: 'fr',    label: 'Français',   flag: '🇫🇷', dir: 'ltr', locale: 'fr-FR' },
-  { code: 'ja',    label: '日本語',      flag: '🇯🇵', dir: 'ltr', locale: 'ja-JP' },
-  { code: 'zh-CN', label: '中文（简体）', flag: '🇨🇳', dir: 'ltr', locale: 'zh-CN' },
-  { code: 'ar',    label: 'العربية',    flag: '🇸🇦', dir: 'rtl', locale: 'ar-SA' },
-] as const;
+export type { LanguageCode, Locale }
