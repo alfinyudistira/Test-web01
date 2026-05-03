@@ -1,8 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   PULSE NEURAL FIT ENGINE — MODULE 01: CALCULATOR (ENTERPRISE)
-   Candidate scoring | Real-time evaluation | Radar chart | Candidate table
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -36,9 +31,6 @@ import {
 // Types
 import type { Candidate, CandidateScore, ScoreValue, CandidateId, HireDecision } from '@/types';
 
-// ============================================================================
-// 1. FORM VALIDATION SCHEMA
-// ============================================================================
 const candidateSchema = z.object({
   firstName: z.string().min(1, 'First name required'),
   lastName: z.string().min(1, 'Last name required'),
@@ -54,9 +46,6 @@ const candidateSchema = z.object({
 
 type CandidateFormData = z.infer<typeof candidateSchema>;
 
-// ============================================================================
-// 2. NEURAL SCORE SLIDER COMPONENT (dari Versi B)
-// ============================================================================
 interface NeuralScoreSliderProps {
   competency: any;
   value: ScoreValue;
@@ -119,9 +108,6 @@ function NeuralScoreSlider({ competency, value, onChange }: NeuralScoreSliderPro
   );
 }
 
-// ============================================================================
-// 3. CANDIDATE TABLE (dari Versi A + upgrade)
-// ============================================================================
 interface CandidateTableProps {
   candidates: Candidate[];
   onPin: (id: string) => void;
@@ -267,9 +253,6 @@ function CandidateTable({
   );
 }
 
-// ============================================================================
-// 4. MAIN CALCULATOR MODULE
-// ============================================================================
 export function Calculator() {
   const { t } = useTranslation();
   const config = useConfig();
@@ -651,90 +634,5 @@ export function Calculator() {
         </Card>
       </div>
     </div>
-  );
-}
-                  </p>
-                </div>
-              </Card>
-            )}
-          </AnimatePresence>
-
-          {/* Radar chart */}
-          <Card>
-            <h3 className="font-mono text-2xs text-pulse-gold uppercase tracking-widest mb-4">
-              [ Competency Radar ]
-            </h3>
-            <ResponsiveContainer width="100%" height={260}>
-              <RadarChart data={radarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
-                <PolarGrid stroke="#2A2A2A" />
-                <PolarAngleAxis
-                  dataKey="subject"
-                  tick={{ fill: '#666', fontSize: 10, fontFamily: "'DM Mono', monospace" }}
-                />
-                <PolarRadiusAxis domain={[0, 5]} tick={false} axisLine={false} />
-                <Radar name="Ideal" dataKey="Ideal" stroke="#333" fill="#333" fillOpacity={0.15} />
-                <Radar name="Candidate" dataKey="Candidate" stroke="#C8A97E" fill="#C8A97E" fillOpacity={0.25} />
-                <Tooltip
-                  contentStyle={{ background: '#0D0D0D', border: '1px solid #2A2A2A', borderRadius: 8, fontFamily: "'DM Mono', monospace", fontSize: 11 }}
-                  labelStyle={{ color: '#888' }}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
-          </Card>
-
-          {/* Science reference */}
-          <Card>
-            <h3 className="font-mono text-2xs text-pulse-gold uppercase tracking-widest mb-3">
-              [ Science Reference ]
-            </h3>
-            <div className="space-y-2">
-              {[
-                { method: 'Work Sample Tests',    coef: 0.54, color: '#74C476' },
-                { method: 'Structured Interview', coef: 0.51, color: '#C8A97E' },
-                { method: 'Cognitive Ability',    coef: 0.51, color: '#9B8EC4' },
-                { method: 'Resume Screening',     coef: 0.18, color: '#E8C35A' },
-                { method: 'Yrs of Experience',    coef: 0.16, color: '#E8835A' },
-              ].map((d) => (
-                <div key={d.method}>
-                  <div className="flex justify-between font-mono text-2xs mb-1">
-                    <span className="text-pulse-text-secondary">{d.method}</span>
-                    <span style={{ color: d.color }}>{d.coef}</span>
-                  </div>
-                  <ProgressBar value={d.coef} max={1} color={d.color} />
-                </div>
-              ))}
-              <p className="font-mono text-2xs text-pulse-text-faint mt-2 leading-relaxed">
-                Schmidt &amp; Hunter (2016) — validity coefficients
-              </p>
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      {/* Shortlist table */}
-      <AnimatePresence>
-        {candidates.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-          >
-            <Divider label="Shortlist" />
-            <CandidateTable
-              candidates={candidates}
-              onExport={() => {
-                exportCandidatesCSV(candidates, config.currency);
-                toast.success(t('toast.exported'));
-                haptic('success');
-              }}
-              onClear={() => {
-                useAppStore.getState().clearCandidates();
-                toast.info('Shortlist cleared');
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
   );
 }
