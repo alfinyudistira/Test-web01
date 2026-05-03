@@ -1,3 +1,4 @@
+import React from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { Calculator } from '@/modules/Calculator'
 import { motion } from 'framer-motion'
