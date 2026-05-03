@@ -11,6 +11,9 @@ import { reduxStore } from '@/store/reduxStore';
 import { useAppStore, useConfig } from '@/store/appStore';
 import { useDynamicTheme } from '@/hooks';
 
+import { RouterProvider, createRouter } from '@tanstack/react-router';
+import { routeTree } from './routeTree.gen';
+
 // ── Components ───────────────────────────────────────────────────────────
 import { Hero } from '@/components/Hero';
 import { AppShell } from '@/components/AppShell';
@@ -46,6 +49,14 @@ const createQueryClient = () => new QueryClient({
 
 // Singleton instance
 const queryClient = createQueryClient();
+
+const router = createRouter({ routeTree });
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
 
 onlineManager.setEventListener((setOnline) => {
   const onOnline = () => setOnline(true);
@@ -105,36 +116,9 @@ function AppContent() {
     <>
       <SVGDefs />
 
-      <AnimatePresence mode="wait" initial={false}>
-        {showApp ? (
-          <motion.div
-            key="app-shell"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, filter: 'blur(10px)' }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="min-h-screen"
-          >
-            <ModuleErrorBoundary moduleName="AppShell" variant="full-page">
-              <AppShell />
-            </ModuleErrorBoundary>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="hero-landing"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <ModuleErrorBoundary moduleName="Hero" variant="full-page">
-              <Hero />
-            </ModuleErrorBoundary>
-          </motion.div>
-        )}
-      </AnimatePresence>
+<RouterProvider router={router} />
 
-      {/* Global overlays (always present) */}
+      {/* Global overlays */}
       <ToastContainer position="bottom-center" stackDirection="column-reverse" />
       <Confetti type="full" duration={4000} />
 
