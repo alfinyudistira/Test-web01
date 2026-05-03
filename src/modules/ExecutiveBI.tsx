@@ -1,15 +1,10 @@
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line, AreaChart, Area,
-  ComposedChart, Scatter, ScatterChart, ZAxis,
-  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  FunnelChart, Funnel, LabelList, ReferenceLine, Legend, Cell,
+ReferenceLine, Legend, Cell,
 } from 'recharts';
-import { useTranslation } from 'react-i18next';
 import { useConfig, useStats, useCandidates } from '@/store/appStore';
-import { formatCurrency, formatNumber, formatDate, cn } from '@/lib/utils';
+import { formatCurrency, formatNumber, cn } from '@/lib/utils';
 import { useHaptic, useIntersectionObserver, useIsMobile } from '@/hooks';
 import { Card, Button, Badge, Divider, SVGDefs, Skeleton, Modal } from '@/components/ui';
 import { useToast } from '@/components/Toast';
