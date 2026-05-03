@@ -1,8 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   PULSE ENTERPRISE STORE — Zustand v5 + Immer + IDB + Devtools
-   Scalable | Observable | Optimistic | Dual Persistence | Type-Safe
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 import { create } from 'zustand';
 import { devtools, persist, subscribeWithSelector, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
@@ -23,9 +18,6 @@ import { DEFAULT_CONFIG, mergeConfig, validateConfig } from '@/lib/defaultconfig
 import { db } from '@/lib/idb';
 import { computeWeightedScore, uid, safeParseJSON, isResultOk } from '@/lib/utils'; // Integrasi utilitas
 
-// ============================================================================
-// 1. CONSTANTS & HELPERS
-// ============================================================================
 const STORE_NAME = 'pulse-enterprise-store-v2';
 const MAX_LIVE_EVENTS = 50;
 const MAX_TOASTS = 5;
@@ -37,10 +29,10 @@ const INITIAL_STATS: AppStats = {
   noHires: 0,
   avgScore: 0,
   scores: [],
-  lastUpdated: new Date().toISOString(),
+  lastUpdated: new Date().toISOString() as any,
 };
 
-// Helper: hitung statistik dari candidates dan config
+// Helper
 function computeStatsFromCandidates(candidates: Candidate[], config: PlatformConfig): AppStats {
   const scores = candidates
     .map(c => c.weightedScore ?? 0)
@@ -60,13 +52,10 @@ function computeStatsFromCandidates(candidates: Candidate[], config: PlatformCon
     noHires,
     avgScore,
     scores,
-    lastUpdated: new Date().toISOString(),
+    lastUpdated: new Date().toISOString() as any,
   };
 }
 
-// ============================================================================
-// 2. STORE INTERFACE
-// ============================================================================
 interface AppState {
   // Navigation & UI
   activeTab: TabId;
@@ -126,9 +115,6 @@ interface AppActions {
 
 type AppStore = AppState & AppActions;
 
-// ============================================================================
-// 3. CREATE STORE
-// ============================================================================
 export const useAppStore = create<AppStore>()(
   devtools(
     subscribeWithSelector(
@@ -139,9 +125,8 @@ export const useAppStore = create<AppStore>()(
           // ──────────────────────────────────────────────────────────────
           activeTab: 'calculator',
           isAppReady: false,
-          isSidebarOpen: true,
-          currentOrgId: undefined,
-          config: DEFAULT_CONFIG,
+           isSidebarOpen: true,
+           config: DEFAULT_CONFIG,
           candidates: [],
           stats: INITIAL_STATS,
           notifications: [],
@@ -365,9 +350,6 @@ export const useAppStore = create<AppStore>()(
   )
 );
 
-// ============================================================================
-// 4. OPTIMIZED SELECTORS (Zustand v5 Best Practice)
-// ============================================================================
 export const useConfig = () => useAppStore(useShallow((s) => s.config));
 export const useCandidates = () => useAppStore(useShallow((s) => s.candidates));
 export const useStats = () => useAppStore(useShallow((s) => s.stats));
@@ -390,21 +372,10 @@ export const useFormattedStats = () => {
   };
 };
 
-// ============================================================================
-// 5. STATIC ACTIONS (Mencegah Infinite Re-render di Komponen React)
-// ============================================================================
-/**
- * Best practice Zustand: Export action secara statis dari getState().
- * Memanggil useAppActions() tidak akan memicu re-render pada komponen,
- * sehingga sangat aman digunakan di dalam useEffect atau event handler.
- */
 export const useAppActions = () => {
   return useAppStore.getState();
 };
 
-// ============================================================================
-// 6. REACTIVE HOOKS (untuk side effects)
-// ============================================================================
 import { useEffect } from 'react';
 import { liveService } from '@/lib/liveService';
 
@@ -419,7 +390,4 @@ export function useLiveEventSync() {
   }, []);
 }
 
-// ============================================================================
-// 7. RE-EXPORT
-// ============================================================================
 export type { AppStore, AppState, AppActions };
