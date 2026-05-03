@@ -1,6 +1,6 @@
 import { defineConfig, loadEnv, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
-import { tanstackRouter } from '@tanstack/router-plugin/vite';
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
-      tanstackRouter({
+      TanStackRouterVite({
         target: 'react',
         autoCodeSplitting: true,
         routeFileIgnorePrefix: '-',
