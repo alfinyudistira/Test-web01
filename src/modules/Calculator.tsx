@@ -456,12 +456,11 @@ export function Calculator() {
           </div>
 
           <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input label="First Name" {...register('firstName')} error={errors.firstName?.message} />
-            <Input label="Last Name" {...register('lastName')} error={errors.lastName?.message} />
+            <Input label="First Name" {...register('firstName')} error={errors.firstName?.message || ''} />
+            <Input label="Last Name" {...register('lastName')} error={errors.lastName?.message || ''} />
             <div className="md:col-span-2">
-              <Input label="Email" type="email" {...register('email')} error={errors.email?.message} />
-            </div>
-            <Input label="Position" {...register('position')} error={errors.position?.message} />
+              <Input label="Email" type="email" {...register('email')} error={errors.email?.message || ''} />
+<Input label="Position" {...register('position')} error={errors.position?.message || ''} />
             <Input label="Years of Experience" type="number" {...register('experienceYears', { valueAsNumber: true })} />
             <Input label="Current Company" {...register('currentCompany')} />
 
@@ -625,11 +624,13 @@ export function Calculator() {
             <Alert variant="success" className="mt-3">
               💡 This candidate exceeds benchmarks. Priority interview recommended.
             </Alert>
+      </div>
           )}
           {analysis.decision === 'NO_HIRE_CRITICAL' && (
             <Alert variant="error" className="mt-3">
               ⚠️ Critical competency gaps. Consider other candidates.
             </Alert>
+      </div>
           )}
         </Card>
       </div>
