@@ -1,10 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// EXECUTIVE BI MODULE — Hiring Intelligence Command Center
-// Pipeline analytics, velocity tracking, predictive ML trendlines,
-// cohort analysis, quality-of-hire index, cost modeling, live KPI tiles,
-// waterfall chart, heatmap calendar, exportable board-ready report
-// Everything derived from store — zero hardcoded display values
-// ═══════════════════════════════════════════════════════════════════════════
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -21,11 +14,9 @@ import { useHaptic, useIntersectionObserver, useIsMobile } from '@/hooks';
 import { Card, Button, Badge, Divider, SVGDefs, Skeleton, Modal } from '@/components/ui';
 import { useToast } from '@/components/Toast';
 
-// ── Palette ───────────────────────────────────────────────────────────────
+// ── Palette ─────
 const PALETTE = ['#C8A97E','#74C476','#6BAED6','#9B8EC4','#E8835A','#7EB5A6','#E8C35A','#F48FB1'];
 
-// ── Simulated historical dataset (would come from real data upload) ────────
-// Structure: monthly hiring data for last 12 months
 const buildHistoricalData = () => {
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return months.map((m, i) => ({
@@ -501,8 +492,8 @@ function useReportExport(historical: ReturnType<typeof buildHistoricalData>, con
 
   return useCallback(() => {
     haptic('medium');
-    const latest = historical[historical.length - 1];
-    const prev   = historical[historical.length - 2];
+   const latest = historical[historical.length - 1]!;
+    const prev   = historical[historical.length - 2]!;
     const tthTrend = ((prev.tth - latest.tth) / prev.tth * 100).toFixed(1);
     const cphTrend = ((prev.costPerHire - latest.costPerHire) / prev.costPerHire * 100).toFixed(1);
 
@@ -582,7 +573,6 @@ type BITab = typeof BI_TABS[number]['id'];
 
 // ── Main ExecutiveBI ───────────────────────────────────────────────────────
 export function ExecutiveBI() {
-  const { t }    = useTranslation();
   const config    = useConfig();
   const stats     = useStats();
   const candidates = useCandidates();
@@ -596,8 +586,8 @@ export function ExecutiveBI() {
   const historical = useMemo(() => buildHistoricalData(), []);
 
   // Derived KPIs from historical + store
-  const latestMonth    = historical[historical.length - 1];
-  const prevMonth      = historical[historical.length - 2];
+  const latestMonth    = historical[historical.length - 1]!;
+  const prevMonth      = historical[historical.length - 2]!;
   const totalHiresYTD  = useMemo(() => historical.reduce((a, d) => a + d.hired, 0), [historical]);
   const avgTTH         = useMemo(() => Math.round(historical.reduce((a, d) => a + d.tth, 0) / historical.length), [historical]);
   const avgCPH         = useMemo(() => Math.round(historical.reduce((a, d) => a + d.costPerHire, 0) / historical.length), [historical]);
