@@ -1,7 +1,10 @@
 import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-ReferenceLine, Legend, Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, LineChart, Line, AreaChart, Area,
+  ComposedChart, Scatter, ScatterChart, ZAxis,
+  ReferenceLine, Legend, Cell,
 } from 'recharts';
 import { useConfig, useStats, useCandidates } from '@/store/appStore';
 import { formatCurrency, formatNumber, cn } from '@/lib/utils';
