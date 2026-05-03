@@ -492,6 +492,7 @@ export function Calculator() {
                 <span>{formatCurrency(config.maxBudget * 2, config.currency, config.locale)}</span>
               </div>
             </div>
+              </div>
           </form>
         </Card>
 
@@ -624,13 +625,11 @@ export function Calculator() {
             <Alert variant="success" className="mt-3">
               💡 This candidate exceeds benchmarks. Priority interview recommended.
             </Alert>
-      </div>
           )}
           {analysis.decision === 'NO_HIRE_CRITICAL' && (
             <Alert variant="error" className="mt-3">
               ⚠️ Critical competency gaps. Consider other candidates.
             </Alert>
-      </div>
           )}
         </Card>
       </div>
