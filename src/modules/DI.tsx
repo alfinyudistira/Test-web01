@@ -1,16 +1,15 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line, RadarChart, Radar,
+  XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Line, RadarChart, Radar,
   PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend,
-  AreaChart, Area, Cell, PieChart, Pie,
+  AreaChart, Area,
 } from 'recharts';
-import { useTranslation } from 'react-i18next';
 import { useConfig, useAppStore } from '@/store/appStore';
 import { useHaptic, useIntersectionObserver } from '@/hooks';
-import { formatDate, cn } from '@/lib/utils';
-import { Card, Button, Badge, Divider, ProgressBar, SVGDefs, Modal } from '@/components/ui';
+import { cn } from '@/lib/utils';
+import { Card, Button, Badge, ProgressBar, SVGDefs, Modal } from '@/components/ui';
 import { useToast } from '@/components/Toast';
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -217,7 +216,7 @@ function MetricCard({ metric, onClick }: { metric: DIMetricData; onClick: () => 
 
       {/* Progress bar */}
       <div className="space-y-1">
-        <ProgressBar value={Math.min(metric.current, metric.target)} max={metric.target} color={sc.color} />
+       <ProgressBar value={Math.min(metric.current, metric.target)} max={metric.target} />
         {metric.current > metric.target && (
           <div className="h-1 bg-pulse-muted rounded-full overflow-hidden">
             <motion.div
