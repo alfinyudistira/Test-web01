@@ -1,15 +1,9 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   PULSE KERNEL — ENTERPRISE BOOTSTRAP v4.0
-   Orchestration: Redux + Zustand + i18n + IDB + PWA + Global Sentinel
-   Production-grade | Resilient | Performant | Accessible
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 import React, { Suspense, lazy, useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider as ReduxProvider } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// ── Core Assets & Configuration ──────────────────────────────────────────
+// ── Core Assets & Configuration
 import './index.css';
 import { initI18n, SUPPORTED_LANGUAGES, type LanguageCode } from '@/lib/i18n';
 import { reduxStore } from '@/store/reduxStore';
@@ -19,18 +13,15 @@ import { liveService } from '@/lib/liveService';
 import { preloadAllModules } from '@/components/AppShell';
 import { haptic } from '@/lib/utils';
 
-// ── Global UI Components ─────────────────────────────────────────────────
+// ── Global UI Components
 import { AppErrorBoundary } from '@/components/ErrorBoundary';
 import { ToastContainer } from '@/components/Toast';
 import { Confetti } from '@/components/Confetti';
 import { SVGDefs } from '@/components/ui';
 
-// ── Lazy load main shell for smaller initial bundle ─────────────────────
+// ── Lazy load main shell for smaller initial bundle
 const AppShell = lazy(() => import('@/components/AppShell').then(m => ({ default: m.AppShell })));
 
-// ============================================================================
-// 1. SAFE STORAGE (Safari private mode & quota safe)
-// ============================================================================
 const safeStorage = {
   get: (key: string): string | null => {
     try { return localStorage.getItem(key); } catch { return null; }
@@ -40,9 +31,6 @@ const safeStorage = {
   },
 };
 
-// ============================================================================
-// 2. RTL & LANGUAGE DETECTION (sync, before paint)
-// ============================================================================
 const applyDirectionAndLang = (lang: string): void => {
   const rtlSet = new Set(['ar', 'he', 'fa', 'ur']);
   const isRTL = rtlSet.has(lang);
@@ -63,9 +51,6 @@ const detectInitialLanguage = (): LanguageCode => {
 const initialLang = detectInitialLanguage();
 applyDirectionAndLang(initialLang);
 
-// ============================================================================
-// 3. GLOBAL ERROR HANDLERS (uncaught errors & promise rejections)
-// ============================================================================
 window.onerror = (message, source, lineno, colno, error) => {
   console.error('[Global Error]', { message, source, lineno, colno, error });
   // In production, you would send to Sentry / LogRocket
@@ -75,9 +60,6 @@ window.onunhandledrejection = (event) => {
   console.error('[Unhandled Rejection]', event.reason);
 };
 
-// ============================================================================
-// 4. PERFORMANCE MONITORING (Long Tasks & Web Vitals)
-// ============================================================================
 if ('PerformanceObserver' in window) {
   try {
     const longTaskObserver = new PerformanceObserver((list) => {
@@ -105,9 +87,6 @@ const reportWebVitals = () => {
 };
 reportWebVitals();
 
-// ============================================================================
-// 5. FEATURE FLAGS (SaaS ready)
-// ============================================================================
 export const featureFlags = {
   enableAI: true,
   enableAdvancedAnalytics: true,
@@ -115,9 +94,6 @@ export const featureFlags = {
 };
 (window as any).__PULSE_FEATURES__ = featureFlags;
 
-// ============================================================================
-// 6. SIMPLE EVENT BUS (for SW updates, etc.)
-// ============================================================================
 type EventHandler = (payload?: any) => void;
 const eventBus = new Map<string, Set<EventHandler>>();
 export const emit = (event: string, payload?: any) => {
@@ -128,9 +104,6 @@ export const on = (event: string, handler: EventHandler) => {
   eventBus.get(event)!.add(handler);
 };
 
-// ============================================================================
-// 7. LOADING SPLASH SCREEN (premium)
-// ============================================================================
 function LoadingSplash() {
   return (
     <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-black">
@@ -169,9 +142,6 @@ function LoadingSplash() {
   );
 }
 
-// ============================================================================
-// 8. ROOT APP COMPONENT (with full providers & error boundary)
-// ============================================================================
 function RootApp() {
   const [isReady, setIsReady] = useState(false);
   const [bootstrapError, setBootstrapError] = useState<Error | null>(null);
@@ -247,9 +217,6 @@ function RootApp() {
   );
 }
 
-// ============================================================================
-// 9. PWA & SERVICE WORKER REGISTRATION (production only)
-// ============================================================================
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
@@ -273,9 +240,6 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
   });
 }
 
-// ============================================================================
-// 10. RENDER APPLICATION
-// ============================================================================
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Root element #root not found');
 
@@ -283,7 +247,6 @@ if (!rootElement) throw new Error('Root element #root not found');
 const config = useAppStore.getState().config;
 if (config?.branding?.primaryColor) {
   document.documentElement.style.setProperty('--primary', config.branding.primaryColor);
-  // Also compute rgb version for shadows
   const hex = config.branding.primaryColor.replace('#', '');
   const r = parseInt(hex.slice(0,2), 16);
   const g = parseInt(hex.slice(2,4), 16);
