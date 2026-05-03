@@ -14,7 +14,7 @@ import type {
   CompetencyId,
   JSONValue,
 } from '@/types';
-import { DEFAULT_CONFIG, mergeConfig, validateConfig } from '@/lib/defaultconfig';
+import { DEFAULT_CONFIG, mergeConfig, validateConfig } from '@/lib/defaultConfig';
 import { db } from '@/lib/idb';
 import { computeWeightedScore, uid, safeParseJSON, isResultOk } from '@/lib/utils'; // Integrasi utilitas
 
