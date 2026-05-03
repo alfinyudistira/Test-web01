@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // ── Core Assets & Configuration
 import './index.css';
-import { initI18n, SUPPORTED_LANGUAGES, type LanguageCode } from '@/lib/i18n';
+import { initI18n, SUPPORTED_LANGUAGES, type LanguageCode } from '@/i18n';
 import { reduxStore } from '@/store/reduxStore';
 import { useAppStore } from '@/store/appStore';
 import { initIDB } from '@/lib/idb';
