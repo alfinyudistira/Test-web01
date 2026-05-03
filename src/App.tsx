@@ -1,8 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   APP ROOT — ENTERPRISE ORCHESTRATOR v4.0
-   Providers | State Sync | Motion | Observability | Offline-ready
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { QueryClient, QueryClientProvider, focusManager, onlineManager } from '@tanstack/react-query';
@@ -11,7 +6,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // ── Core imports ─────────────────────────────────────────────────────────
-import '@/lib/i18n';  // Initialize internationalization
+import '@/i18n';
 import { reduxStore } from '@/store/reduxStore';
 import { useAppStore, useConfig } from '@/store/appStore';
 import { useDynamicTheme } from '@/hooks';
@@ -29,9 +24,6 @@ const ReactQueryDevtools = import.meta.env.DEV
   ? () => import('@tanstack/react-query-devtools').then(m => m.ReactQueryDevtools)
   : null;
 
-// ============================================================================
-// 1. QUERY CLIENT CONFIGURATION (enterprise-grade)
-// ============================================================================
 const createQueryClient = () => new QueryClient({
   defaultOptions: {
     queries: {
@@ -55,9 +47,6 @@ const createQueryClient = () => new QueryClient({
 // Singleton instance
 const queryClient = createQueryClient();
 
-// ============================================================================
-// 2. NETWORK & FOCUS MANAGERS (React Query integration)
-// ============================================================================
 onlineManager.setEventListener((setOnline) => {
   const onOnline = () => setOnline(true);
   const onOffline = () => setOnline(false);
@@ -75,9 +64,6 @@ focusManager.setEventListener((handleFocus) => {
   return () => window.removeEventListener('visibilitychange', onFocus);
 });
 
-// ============================================================================
-// 3. GLOBAL LOADER COMPONENT (premium)
-// ============================================================================
 function GlobalLoader() {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
@@ -95,9 +81,6 @@ function GlobalLoader() {
   );
 }
 
-// ============================================================================
-// 4. APP CONTENT (dynamic between Hero and AppShell)
-// ============================================================================
 function AppContent() {
   const showApp = useAppStore((s) => s.showApp);
   const isAppReady = useAppStore((s) => s.isAppReady);
@@ -166,9 +149,6 @@ function AppContent() {
   );
 }
 
-// ============================================================================
-// 5. PROVIDERS COMPOSITION (clean architecture)
-// ============================================================================
 function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <ReduxProvider store={reduxStore}>
@@ -179,9 +159,6 @@ function AppProviders({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ============================================================================
-// 6. ROOT APP (with error boundary and suspense)
-// ============================================================================
 export default function App() {
   // Memoized devtools component (lazy)
   const Devtools = useMemo(() => {
