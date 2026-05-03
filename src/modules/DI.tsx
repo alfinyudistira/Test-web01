@@ -1,9 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// D&I DASHBOARD MODULE — Diversity, Equity & Inclusion Analytics
-// Animated metrics, trend lines, geo heatmap, equity audit engine,
-// intersectionality matrix, global benchmark comparison
-// All data derived from config.diTargets (SSOT) — zero hardcoding
-// ═══════════════════════════════════════════════════════════════════════════
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -37,15 +31,12 @@ interface DIMetricData {
   benchmark_top10: number;
 }
 
-// ── Static D&I metrics — enriched, config-target-aware ───────────────────
-// All "target" values read from config.diTargets, "current" would come
-// from real HR data uploads in production — using realistic sample values here.
 const buildMetrics = (targets: Record<string, number>): DIMetricData[] => [
   {
     id: 'gender_female',
     label: 'Gender Diversity — Female %',
-    current: 43, target: targets.gender_female ?? 40,
-    unit: '%', status: 43 >= (targets.gender_female ?? 40) ? 'exceeded' : 'progress',
+    current: 43, target: targets['gender_female'] ?? 40,
+    unit: '%', status: 43 >= (targets['gender_female'] ?? 40) ? 'exceeded' : 'progress',
     trend: +3, history: [35, 37, 39, 40, 41, 43],
     category: 'representation', icon: '⚧',
     benchmark_industry: 38, benchmark_top10: 47,
@@ -53,7 +44,7 @@ const buildMetrics = (targets: Record<string, number>): DIMetricData[] => [
   {
     id: 'bootcamp_alt',
     label: 'Bootcamp / Alt-Education Hires',
-    current: 28, target: targets.bootcamp_alt ?? 20,
+    current: 28, target: targets['bootcamp_alt'] ?? 20,
     unit: '%', status: 'exceeded',
     trend: +8, history: [12, 15, 18, 20, 24, 28],
     category: 'representation', icon: '🎓',
@@ -62,7 +53,7 @@ const buildMetrics = (targets: Record<string, number>): DIMetricData[] => [
   {
     id: 'geo_apac',
     label: 'Geographic Representation — APAC',
-    current: 38, target: targets.geo_apac ?? 30,
+    current: 38, target: targets['geo_apac'] ?? 30,
     unit: '%', status: 'exceeded',
     trend: +5, history: [28, 30, 32, 34, 36, 38],
     category: 'representation', icon: '🌏',
@@ -71,7 +62,7 @@ const buildMetrics = (targets: Record<string, number>): DIMetricData[] => [
   {
     id: 'geo_americas',
     label: 'Geographic Representation — Americas',
-    current: 25, target: targets.geo_americas ?? 25,
+    current: 25, target: targets['geo_americas'] ?? 25,
     unit: '%', status: 'met',
     trend: 0, history: [22, 23, 24, 25, 25, 25],
     category: 'representation', icon: '🌎',
@@ -80,7 +71,7 @@ const buildMetrics = (targets: Record<string, number>): DIMetricData[] => [
   {
     id: 'geo_europe',
     label: 'Geographic Representation — Europe',
-    current: 22, target: targets.geo_europe ?? 25,
+    current: 22, target: targets['geo_europe'] ?? 25,
     unit: '%', status: 'progress',
     trend: -1, history: [20, 22, 23, 24, 23, 22],
     category: 'representation', icon: '🌍',
@@ -89,7 +80,7 @@ const buildMetrics = (targets: Record<string, number>): DIMetricData[] => [
   {
     id: 'geo_mena',
     label: 'Geographic Representation — MENA',
-    current: 15, target: targets.geo_mena ?? 20,
+    current: 15, target: targets['geo_mena'] ?? 20,
     unit: '%', status: 'needs-work',
     trend: +2, history: [8, 9, 10, 12, 13, 15],
     category: 'representation', icon: '🌐',
@@ -98,7 +89,7 @@ const buildMetrics = (targets: Record<string, number>): DIMetricData[] => [
   {
     id: 'diverse_pool',
     label: 'Diverse Final Candidate Pool',
-    current: 40, target: targets.diverse_pool ?? 40,
+    current: 40, target: targets['diverse_pool'] ?? 40,
     unit: '%', status: 'met',
     trend: +2, history: [30, 32, 35, 38, 38, 40],
     category: 'process', icon: '🎯',
@@ -107,7 +98,7 @@ const buildMetrics = (targets: Record<string, number>): DIMetricData[] => [
   {
     id: 'blind_screening',
     label: 'Blind Screening Adoption',
-    current: 100, target: targets.blind_screening ?? 100,
+    current: 100, target: targets['blind_screening'] ?? 100,
     unit: '%', status: 'exceeded',
     trend: +15, history: [60, 70, 85, 90, 95, 100],
     category: 'process', icon: '🔒',
@@ -195,7 +186,6 @@ function AnimatedCounter({ value, suffix = '%', color }: { value: number; suffix
 // ── Metric card ───────────────────────────────────────────────────────────
 function MetricCard({ metric, onClick }: { metric: DIMetricData; onClick: () => void }) {
   const sc  = STATUS_CONFIG[metric.status];
-  const pct = Math.min((metric.current / (metric.target || 1)) * 100, 120);
 
   return (
     <motion.div
@@ -227,7 +217,7 @@ function MetricCard({ metric, onClick }: { metric: DIMetricData; onClick: () => 
 
       {/* Progress bar */}
       <div className="space-y-1">
-        <ProgressBar value={Math.min(metric.current, metric.target)} max={metric.target} color={sc.color} animated />
+        <ProgressBar value={Math.min(metric.current, metric.target)} max={metric.target} color={sc.color} />
         {metric.current > metric.target && (
           <div className="h-1 bg-pulse-muted rounded-full overflow-hidden">
             <motion.div
@@ -254,7 +244,7 @@ function MetricCard({ metric, onClick }: { metric: DIMetricData; onClick: () => 
             const min = Math.min(...metric.history);
             const max = Math.max(...metric.history);
             const range = max - min || 1;
-            const y1 = 18 - ((metric.history[i - 1] - min) / range) * 16;
+            const y1 = 18 - ((metric.history[i - 1]! - min) / range) * 16;
             const y2 = 18 - ((v - min) / range) * 16;
             return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={sc.color} strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />;
           })}
@@ -263,7 +253,7 @@ function MetricCard({ metric, onClick }: { metric: DIMetricData; onClick: () => 
             const min = Math.min(...metric.history);
             const max = Math.max(...metric.history);
             const range = max - min || 1;
-            const y = 18 - ((metric.history[metric.history.length - 1] - min) / range) * 16;
+            const y = 18 - ((metric.history[metric.history.length - 1]! - min) / range) * 16;
             return <circle cx="62" cy={y} r="2.5" fill={sc.color} />;
           })()}
         </svg>
