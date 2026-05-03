@@ -1,8 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   PULSE COMPENSATION ENGINE — MODULE 03: MARKET CALIBRATION (ENTERPRISE)
-   Global Benchmarking | PPP Adjustment | Total Rewards | Multi-currency
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -18,10 +13,6 @@ import { formatters, cn, uid, haptic } from '@/lib/utils';
 import { useHaptic, useLocalStorage, useKeyboardShortcuts, useToast } from '@/hooks';
 import { Card, Button, Badge, Divider, ProgressBar, Tooltip, Kbd, Alert } from '@/components/ui';
 import type { Currency } from '@/types';
-
-// ============================================================================
-// 1. MARKET INTELLIGENCE DATA (ENTERPRISE GRADE)
-// ============================================================================
 
 const MARKET_STANDARDS_USD = {
   entry:  { p25: 42000, p50: 55000, p75: 68000, p90: 82000 },
@@ -66,9 +57,6 @@ const BENEFITS_CATALOG = [
   { id: 'learning', label: 'Learning Budget', valueUSD: 3000, icon: '📚', description: 'Courses & conferences' },
 ];
 
-// ============================================================================
-// 2. HELPER: PERCENTILE GAUGE (dari versi asli)
-// ============================================================================
 function PercentileGauge({ percentile, color }: { percentile: number; color: string }) {
   const radius = 45;
   const circumference = 2 * Math.PI * radius;
@@ -103,9 +91,6 @@ function PercentileGauge({ percentile, color }: { percentile: number; color: str
   );
 }
 
-// ============================================================================
-// 3. MAIN MODULE
-// ============================================================================
 export function SalaryBench() {
   const { t } = useTranslation();
   const config = useConfig();
@@ -511,126 +496,5 @@ Negotiation Strategy: ${calibration.percentile > 75 ? 'Elite offer, focus on equ
         </div>
       </div>
     </div>
-  );
-}0.5">
-                          {formatCurrency(p.val, currency, config.locale)}
-                        </p>
-                        <p className="font-mono text-2xs text-pulse-text-faint">{p.note}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </motion.div>
-        )}
-
-        {activeTab === 'comp' && (
-          <motion.div key="comp" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-            <Card>
-              <h3 className="font-mono text-xs text-pulse-gold uppercase tracking-widest mb-4">
-                [ Total Compensation Builder ]
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {BENEFITS.map((b) => {
-                  const selected = selectedBenefits.includes(b.id);
-                  const localVal = Math.round(b.usdValue * fxRate);
-                  return (
-                    <motion.button
-                      key={b.id}
-                      onClick={() => toggleBenefit(b.id)}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={cn(
-                        'p-4 rounded-lg border text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pulse-gold',
-                        selected
-                          ? 'border-pulse-gold/50 bg-pulse-gold/10'
-                          : 'border-pulse-border bg-pulse-elevated hover:border-pulse-muted'
-                      )}
-                      aria-pressed={selected}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <span className="text-xl" aria-hidden="true">{b.icon}</span>
-                        {selected && <span className="text-pulse-gold text-xs">✓</span>}
-                      </div>
-                      <p className="font-sans text-xs font-medium text-pulse-text-primary mb-1">{b.label}</p>
-                      <p className="font-mono text-xs text-pulse-gold">
-                        +{formatCurrency(localVal, currency, config.locale)}/yr
-                      </p>
-                    </motion.button>
-                  );
-                })}
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-pulse-border grid grid-cols-3 gap-4 text-center">
-                {[
-                  { label: 'Base Salary',  val: effectiveOffering,              color: '#C8A97E' },
-                  { label: 'Benefits',     val: benefitsTotal,                   color: '#9B8EC4' },
-                  { label: 'Total Comp',   val: effectiveOffering + benefitsTotal, color: '#74C476' },
-                ].map((m) => (
-                  <div key={m.label} className="p-4 bg-pulse-surface rounded-lg border border-pulse-border">
-                    <p className="font-display text-xl font-bold" style={{ color: m.color }}>
-                      {formatCurrency(m.val, currency, config.locale)}
-                    </p>
-                    <p className="font-mono text-2xs text-pulse-text-faint mt-1">{m.label}</p>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </motion.div>
-        )}
-
-        {activeTab === 'radar' && (
-          <motion.div key="radar" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-            <Card>
-              <h3 className="font-mono text-xs text-pulse-gold uppercase tracking-widest mb-4">
-                [ Global Market Positioning — CoL Adjusted ]
-              </h3>
-              <ResponsiveContainer width="100%" height={360}>
-                <RadarChart data={radarData} margin={{ top: 20, right: 40, bottom: 20, left: 40 }}>
-                  <PolarGrid stroke="#2A2A2A" />
-                  <PolarAngleAxis dataKey="city" tick={{ fill: '#888', fontSize: 11, fontFamily: "'DM Mono', monospace" }} />
-                  <PolarRadiusAxis tick={false} axisLine={false} />
-                  <Radar name="Market Median" dataKey="Market Median" stroke="#555"    fill="#555"    fillOpacity={0.15} />
-                  <Radar name="Your Offer"    dataKey="Your Offer"    stroke="#C8A97E" fill="#C8A97E" fillOpacity={0.25} />
-                  <Tooltip contentStyle={{ background: '#0D0D0D', border: '1px solid #2A2A2A', borderRadius: 8, fontFamily: "'DM Mono', monospace", fontSize: 11 }} />
-                  <Legend wrapperStyle={{ fontFamily: "'DM Mono', monospace", fontSize: '0.72rem' }} />
-                </RadarChart>
-              </ResponsiveContainer>
-              <p className="font-mono text-2xs text-pulse-text-faint text-center mt-2">
-                All values adjusted for local cost of living. Source: Levels.fyi, Glassdoor, LinkedIn Salary (2024).
-              </p>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Negotiation guide */}
-      <Card>
-        <h3 className="font-mono text-xs text-pulse-gold uppercase tracking-widest mb-4">
-          [ Negotiation Playbook — {competitiveness.label} Position ]
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {percentile >= 75
-            ? [
-                { step: '01', title: 'Lead with confidence',      desc: 'Your offer is in the top quartile. Highlight total comp, not just base. Candidates at this level expect stability, not just salary.' },
-                { step: '02', title: 'Emphasize equity & growth', desc: 'Top-percentile candidates weigh ESOP and career trajectory heavily. Make these concrete and time-bound.' },
-                { step: '03', title: 'Speed is your advantage',   desc: 'Competitive offers generate urgency. Use your strong offer position to compress the offer stage to <3 days.' },
-              ]
-            : percentile >= 50
-            ? [
-                { step: '01', title: 'Benchmark transparency',   desc: 'Share that your offer is at or above market median. Candidates respond to honesty over haggling.' },
-                { step: '02', title: 'Strengthen benefits mix',  desc: `Add high-perceived-value benefits (remote flexibility, L&D, equity). ${formatCurrency(benefitsTotal, currency, config.locale)}/yr in benefits is compelling.` },
-                { step: '03', title: 'Negotiate on total comp',  desc: 'Frame the conversation around ${formatCurrency(effectiveOffering + benefitsTotal, currency, config.locale)} total comp, not just base.' },
-              ]
-            : [
-                { step: '01', title: 'Close the gap strategically', desc: `You're ${formatCurrency(Math.max(0, marketData.p50 - effectiveOffering), currency, config.locale)} below median. Prioritize budget reallocation before negotiation.` },
-                { step: '02', title: 'Identify non-cash levers',    desc: 'Remote work, flexible hours, accelerated review cycles, and equity can compensate a below-market base by perceived value.' },
-                { step: '03', title: 'Target correctly',            desc: 'A below-median offer can work for candidates prioritizing career growth, brand name, or learning over compensation.' },
-              ]
-          }
-        </div>
-      </Card>
-    </motion.div>
   );
 }
