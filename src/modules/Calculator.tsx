@@ -474,9 +474,9 @@ export function Calculator() {
                     {formatCurrency(formValues.expectedSalary.amount, config.currency, config.locale)}
                   </p>
                 </div>
-                <Badge variant={analysis.salaryStatus === 'over_budget' ? 'danger' : 'success'}>
-                  {analysis.salaryNote}
-                </Badge>
+                <Badge variant={formValues.expectedSalary.amount > config.maxBudget ? 'danger' : 'success'}>
+  {formValues.expectedSalary.amount > config.maxBudget ? '⚠️ Over Budget' : '✅ Within Budget'}
+</Badge>
               </div>
               <input
                 type="range"
@@ -618,9 +618,9 @@ export function Calculator() {
             className="mb-6"
           />
           <Divider />
-          <Alert variant={analysis.salaryStatus === 'over_budget' ? 'warning' : 'info'}>
-            {analysis.salaryNote}
-          </Alert>
+          <Alert variant={formValues.expectedSalary.amount > config.maxBudget ? 'warning' : 'info'}>
+  {formValues.expectedSalary.amount > config.maxBudget ? '⚠️ Exceeds budget threshold. Negotiation required.' : '✅ Expected salary is within budget.'}
+</Alert>
           {analysis.decision === 'STRONG_HIRE' && (
             <Alert variant="success" className="mt-3">
               💡 This candidate exceeds benchmarks. Priority interview recommended.
