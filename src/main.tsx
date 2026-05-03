@@ -258,35 +258,6 @@ ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <RootApp />
   </React.StrictMode>
-);h (err) {
-      // silent fail
-    }
-  }, 3000);
-}
-
-// ── HMR Support (Vite) ───────────────────────────────────────────────────
-if (import.meta.hot) {
-  import.meta.hot.accept('./App', (newModule) => {
-    if (newModule) {
-      // Re-render root untuk hot update
-      const root = ReactDOM.createRoot(document.getElementById('root')!);
-      root.render(
-        <React.StrictMode>
-          <RootApp />
-        </React.StrictMode>
-      );
-    }
-  });
-}
-
-// ── Render aplikasi ──────────────────────────────────────────────────────
-const rootElement = document.getElementById('root');
-if (!rootElement) throw new Error('Root element #root not found');
-
-ReactDOM.createRoot(rootElement).render(
-  <React.StrictMode>
-    <RootApp />
-  </React.StrictMode>
 );
 
 // ── Export event bus untuk konsumsi global (opsional) ────────────────────
