@@ -670,7 +670,6 @@ function TargetEditor({ metric, onSave }: {
 
 // ── Main D&I component ────────────────────────────────────────────────────
 export function DIMetrics() {
-  const { t }  = useTranslation();
   const config  = useConfig();
   const updateConfig = useAppStore((s) => s.updateConfig);
   const haptic  = useHaptic();
@@ -679,8 +678,6 @@ export function DIMetrics() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [detailMetric,   setDetailMetric]   = useState<DIMetricData | null>(null);
   const [editMode,       setEditMode]       = useState(false);
-  const [reportOpen,     setReportOpen]     = useState(false);
-
   // Build metrics from config SSOT
   const allMetrics = useMemo(() => buildMetrics(config.diTargets), [config.diTargets]);
 
