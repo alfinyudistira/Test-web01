@@ -1,15 +1,9 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   PULSE REDUX CORE — ENTERPRISE ORCHESTRATOR v3.1 (STRICT MODE)
-   Dynamic reducers | Offline queue | Performance monitor | Persistence
-   Fully typed | Production-optimized | Extensible
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 import {
   configureStore,
   combineReducers,
   type Middleware,
   type Reducer,
-  type UnknownAction, // Menggantikan AnyAction (RTK v2 Best Practice)
+  type UnknownAction,
   isRejectedWithValue,
 } from '@reduxjs/toolkit';
 import {
@@ -21,20 +15,13 @@ import pipelineReducer from './pipelineSlice';
 import { haptic } from '@/lib/utils';
 import { db } from '@/lib/idb';
 
-// ============================================================================
-// 1. ENVIRONMENT & CONSTANTS
-// ============================================================================
 const isDev = import.meta.env.DEV;
 const PERSIST_KEY = 'pulse-redux-state-v1';
 const OFFLINE_QUEUE_KEY = 'pulse-offline-queue';
-const DEBOUNCE_TIME = 500; // ms untuk deduplication
+const DEBOUNCE_TIME = 500;
 
-// ============================================================================
-// 2. DYNAMIC REDUCER REGISTRY (untuk lazy loading modules)
-// ============================================================================
 const staticReducers = {
   pipeline: pipelineReducer,
-  // tambah reducer statis lain di sini
 };
 
 const asyncReducers: Record<string, Reducer> = {};
@@ -57,10 +44,6 @@ export function removeReducer(key: string): void {
   delete asyncReducers[key];
   reduxStore.replaceReducer(createRootReducer());
 }
-
-// ============================================================================
-// 3. MIDDLEWARES ENTERPRISE
-// ============================================================================
 
 // ── 3.1 Error Logger + Haptic Feedback
 const errorMiddleware: Middleware = () => (next) => (action) => {
@@ -111,7 +94,7 @@ const dedupeMiddleware: Middleware = () => {
     if (typeof act.type !== 'string') return next(action);
 
     const now = Date.now();
-    const key = `${act.type}-${JSON.stringify(act.payload)}`;
+    const key = `${act.type}-${JSON.stringify(act['payload'])}`;
     const last = lastDispatched.get(key);
     
     if (last && now - last < DEBOUNCE_TIME) {
@@ -150,7 +133,7 @@ const offlineMiddleware: Middleware = () => (next) => (action) => {
   const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
   const needsNetwork = act.type.endsWith('/pending') || act.type.includes('fetch');
   
-  const meta = act.meta as { skipOfflineQueue?: boolean } | undefined;
+  const meta = act['meta'] as { skipOfflineQueue?: boolean } | undefined;
 
   if (isOffline && needsNetwork && !meta?.skipOfflineQueue) {
     offlineQueue.push({ action: act, timestamp: Date.now(), retries: 0 });
@@ -205,7 +188,7 @@ const analyticsMiddleware: Middleware = () => (next) => (action) => {
   const tracked = ['pipeline/fetchAIInsights/fulfilled', 'pipeline/setDecisionFilter', 'pipeline/setSearchQuery'];
   if (tracked.includes(act.type)) {
     if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-      window.gtag('event', act.type, { payload: act.payload });
+      window.gtag('event', act.type, { payload: act['payload'] });
     }
   }
   return next(action);
@@ -224,7 +207,7 @@ const loggerMiddleware: Middleware = (store) => (next) => (action) => {
     `%c[Redux] ${act.type || 'UNKNOWN'}`,
     'color:#C8A97E;font-weight:bold;',
     {
-      payload: act.payload,
+      payload: act['payload'],
       duration: `${(end - start).toFixed(2)}ms`,
       state: store.getState(),
     }
@@ -232,9 +215,6 @@ const loggerMiddleware: Middleware = (store) => (next) => (action) => {
   return result;
 };
 
-// ============================================================================
-// 4. CREATE STORE WITH ALL MIDDLEWARES
-// ============================================================================
 export const reduxStore = configureStore({
   reducer: createRootReducer(),
   middleware: (getDefaultMiddleware) =>
@@ -266,9 +246,6 @@ export const reduxStore = configureStore({
   enhancers: (getDefaultEnhancers) => getDefaultEnhancers(),
 });
 
-// ============================================================================
-// 5. LOAD PERSISTED STATE
-// ============================================================================
 async function loadPersistedState() {
   try {
     const saved = localStorage.getItem(PERSIST_KEY);
@@ -287,9 +264,6 @@ async function loadPersistedState() {
 loadOfflineQueue();
 loadPersistedState();
 
-// ============================================================================
-// 6. TYPES & HOOKS
-// ============================================================================
 export type RootState = ReturnType<typeof reduxStore.getState>;
 export type AppDispatch = typeof reduxStore.dispatch;
 
@@ -300,9 +274,6 @@ export function createSelectorHook<T>(selector: (state: RootState) => T): () => 
   return () => useAppSelector(selector);
 }
 
-// ============================================================================
-// 7. EXPOSE STORE GLOBALLY
-// ============================================================================
 declare global {
   interface Window {
     __REDUX_STORE__?: typeof reduxStore;
@@ -315,9 +286,6 @@ if (isDev && typeof window !== 'undefined') {
   window.__REDUX_STORE__ = reduxStore;
 }
 
-// ============================================================================
-// 8. INTEGRATION WITH ZUSTAND STORE
-// ============================================================================
 import { useAppStore as useZustandAppStore } from './appStore';
 
 export function syncZustandToRedux() {
@@ -329,8 +297,4 @@ export function syncZustandToRedux() {
   });
   return unsubscribe;
 }
-
-// ============================================================================
-// 9. DEFAULT EXPORT
-// ============================================================================
 export default reduxStore;
