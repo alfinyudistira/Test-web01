@@ -212,7 +212,7 @@ function buildDefaultCompetencies(): Competency[] {
 const nowIso = new Date().toISOString() as ISODate;
 
 export const DEFAULT_CONFIG: PlatformConfig = {
-  companyName: 'Pulse Digital',
+  companyName: 'Alfin Maulana Yudistira',
   companyLogo: '/brand/logo-gold.svg',
   currency: 'IDR',
   locale: 'id-ID',
@@ -276,7 +276,8 @@ export function mergeConfig(
   override?: DeepPartial<PlatformConfig>
 ): PlatformConfig {
   if (!override) return base;
-  return deepMerge(base, override);
+  // FIX 1: Explicit cast to PlatformConfig to prevent TS excessively deep recursive errors
+  return deepMerge(base, override) as PlatformConfig; 
 }
 
 type Migration = (oldConfig: unknown) => PlatformConfig;
@@ -284,7 +285,8 @@ type Migration = (oldConfig: unknown) => PlatformConfig;
 const migrations: Record<number, Migration> = {
   1: (old: unknown): PlatformConfig => {
     const oldSafe = old as DeepPartial<PlatformConfig>;
-    const migrated = deepMerge(DEFAULT_CONFIG, oldSafe);
+    // Explicit cast here as well
+    const migrated = deepMerge(DEFAULT_CONFIG, oldSafe) as PlatformConfig;
     return migrated;
   },
 };
@@ -315,7 +317,7 @@ export function validateConfig(config: PlatformConfig): string[] {
     .reduce((sum, c) => sum + (c.weight ?? 0), 0);
   
   if (Math.abs(totalWeight - 1) > 0.01 && config.competencies.length > 0) {
-    console.warn(`[Config] Competency weights sum to ${totalWeight}, expected 1.0`);
+    console.warn(`[Config] Competency weights sum to ${totalWeight.toFixed(2)}, expected 1.0`);
   }
 
   return errors;
@@ -350,7 +352,8 @@ export async function loadConfig(options?: {
       });
       if (response.ok) {
         const remoteConfig = await response.json();
-        const merged = mergeConfig(DEFAULT_CONFIG, remoteConfig);
+        // Explicit cast mapping applied
+        const merged = mergeConfig(DEFAULT_CONFIG, remoteConfig) as PlatformConfig;
         const errors = validateConfig(merged);
         if (errors.length === 0) {
           await saveConfig(merged);
@@ -365,9 +368,11 @@ export async function loadConfig(options?: {
   try {
     const localConfig = await idbGetConfig();
     if (localConfig) {
-      const errors = validateConfig(localConfig);
+      // Pastikan ada fallback jika struktur lokal korup/berubah
+      const mergedLocal = mergeConfig(DEFAULT_CONFIG, localConfig as DeepPartial<PlatformConfig>);
+      const errors = validateConfig(mergedLocal);
       if (errors.length === 0) {
-        return localConfig;
+        return mergedLocal;
       }
     }
   } catch (err) {
