@@ -99,7 +99,7 @@ const reportWebVitals = () => {
 };
 reportWebVitals();
 
-export const featureFlags = {
+const featureFlags = {
   enableAI: true,
   enableAdvancedAnalytics: true,
   enableDebugPanel: import.meta.env.DEV,
@@ -270,5 +270,5 @@ ReactDOM.createRoot(rootElement).render(
   </React.StrictMode>
 );
 
-// ── Export event bus untuk konsumsi global (opsional) ────────────────────
-export { eventBus, featureFlags, networkState };
+export { eventBus, featureFlags };
+
