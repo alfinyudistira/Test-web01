@@ -1,22 +1,13 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   PULSE NOTIFICATION ENGINE — ENTERPRISE TOAST v2.0
-   Priority queue | Dedupe | Promise | Gesture | Haptic | Accessible
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence, type PanInfo } from 'framer-motion';
 import { useAppStore } from '@/store/appStore';
 import { cn, haptic } from '@/lib/utils';
 import type { ToastPayload } from '@/types';
 
-// ============================================================================
-// 1. CONSTANTS & HELPERS
-// ============================================================================
 const MAX_TOASTS = 5;
 const DEDUPE_WINDOW = 2000; // ms
 const DEFAULT_DURATION = 4000;
 
-// Priority untuk sorting (error paling atas)
 const PRIORITY: Record<ToastPayload['type'], number> = {
   error: 4,
   warning: 3,
@@ -24,7 +15,6 @@ const PRIORITY: Record<ToastPayload['type'], number> = {
   info: 1,
 };
 
-// Ikon SVG untuk setiap tipe (dari Versi A, lebih premium)
 const TOAST_ICONS: Record<ToastPayload['type'], JSX.Element> = {
   success: (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -58,9 +48,6 @@ const TOAST_COLORS: Record<ToastPayload['type'], string> = {
 // Dedupe cache: pesan → timestamp terakhir muncul
 const dedupeCache = new Map<string, number>();
 
-// ============================================================================
-// 2. TOAST ITEM COMPONENT (dengan pause, action, swipe, progress)
-// ============================================================================
 interface ToastItemProps {
   toast: ToastPayload;
   onDismiss: (id: string) => void;
@@ -72,14 +59,12 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
   const duration = toast.duration ?? DEFAULT_DURATION;
   const color = toast.color ?? TOAST_COLORS[toast.type];
 
-  // Haptic saat muncul
   useEffect(() => {
     if (toast.type === 'error') haptic('error');
     else if (toast.type === 'success') haptic('success');
     else haptic('light');
   }, [toast.type]);
 
-  // Auto dismiss dengan pause
   useEffect(() => {
     if (paused) return;
     timerRef.current = setTimeout(() => {
@@ -178,9 +163,6 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
   );
 }
 
-// ============================================================================
-// 3. TOAST CONTAINER (priority queue, dedupe, max items)
-// ============================================================================
 interface ToastContainerProps {
   position?:
     | 'bottom-center'
