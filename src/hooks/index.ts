@@ -17,8 +17,6 @@ export { useDebouncedValue };
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
-export { useDebouncedValue };
-
 export function useLiveEvent<T = unknown>(
   type: EventType | '*',
   callback: (event: AppEvent<T>) => void
