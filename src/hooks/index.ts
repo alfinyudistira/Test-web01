@@ -7,7 +7,7 @@ import {
   useMemo,
   useReducer,
 } from 'react';
-import { useDebouncedValue } from 'use-debounce';
+import { useDebounce as useDebouncedValue } from 'use-debounce';
 import { haptic, withViewTransition, debounce, throttle as throttleFn, uid } from '@/lib/utils';
 import { liveService } from '@/lib/liveService';
 import { db } from '@/lib/idb';
