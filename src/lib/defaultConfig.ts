@@ -23,8 +23,10 @@ const CompetencyLevelSchema = z.object({
   behavioralIndicators: z.array(z.string()),
 });
 
-const CompetencySchema: z.ZodType<Competency> = z.object({
-  id: z.string() as unknown as z.ZodType<Competency['id']>,
+// PERBAIKAN: Hapus anotasi di awal variabel, bersihkan 'as unknown' di dalam, 
+// dan pindahkan casting tipe data ke paling akhir.
+const CompetencySchema = z.object({
+  id: z.string(),
   label: z.string(),
   shortCode: z.string(),
   weight: z.number().min(0).max(1),
@@ -36,15 +38,16 @@ const CompetencySchema: z.ZodType<Competency> = z.object({
   icon: z.string().optional(),
   redFlags: z.array(z.string()).optional(),
   greenFlags: z.array(z.string()).optional(),
-  metadata: z.record(z.unknown()).optional() as any, 
-  createdAt: z.string() as unknown as z.ZodType<ISODate>,
-  updatedAt: z.string() as unknown as z.ZodType<ISODate>,
-  deletedAt: z.string().nullable() as unknown as z.ZodType<ISODate | null>,
-  createdBy: z.string() as unknown as z.ZodType<UserId>,
-  updatedBy: z.string() as unknown as z.ZodType<UserId>,
-});
+  metadata: z.record(z.unknown()).optional(), 
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable(),
+  createdBy: z.string(),
+  updatedBy: z.string(),
+}) as unknown as z.ZodType<Competency>;
 
-const PlatformConfigSchema: z.ZodType<PlatformConfig> = z.object({
+// PERBAIKAN: Terapkan pola pembersihan yang sama untuk PlatformConfigSchema.
+const PlatformConfigSchema = z.object({
   companyName: z.string(),
   companyLogo: z.string().optional(),
   currency: z.enum(['IDR', 'USD', 'EUR', 'SGD', 'MYR', 'GBP', 'JPY', 'CNY']),
@@ -72,7 +75,7 @@ const PlatformConfigSchema: z.ZodType<PlatformConfig> = z.object({
   modules: z.array(z.object({
     id: z.string(),
     enabled: z.boolean(),
-    config: z.record(z.unknown()) as any,
+    config: z.record(z.unknown()),
     permissionRequired: z.array(z.any()),
   })),
   branding: z.object({
@@ -93,10 +96,10 @@ const PlatformConfigSchema: z.ZodType<PlatformConfig> = z.object({
     leverEnabled: z.boolean(),
   }).optional(),
   version: z.string(),
-  createdAt: z.string() as unknown as z.ZodType<ISODate>,
-  updatedAt: z.string() as unknown as z.ZodType<ISODate>,
-  deletedAt: z.string().nullable() as unknown as z.ZodType<ISODate | null>,
-});
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable(),
+}) as unknown as z.ZodType<PlatformConfig>;
 
 function buildDefaultCompetencies(): Competency[] {
   const now = new Date().toISOString() as ISODate;
@@ -276,7 +279,6 @@ export function mergeConfig(
   override?: DeepPartial<PlatformConfig>
 ): PlatformConfig {
   if (!override) return base;
-  // FIX 1: Explicit cast to PlatformConfig to prevent TS excessively deep recursive errors
   return deepMerge(base, override) as PlatformConfig; 
 }
 
@@ -285,7 +287,6 @@ type Migration = (oldConfig: unknown) => PlatformConfig;
 const migrations: Record<number, Migration> = {
   1: (old: unknown): PlatformConfig => {
     const oldSafe = old as DeepPartial<PlatformConfig>;
-    // Explicit cast here as well
     const migrated = deepMerge(DEFAULT_CONFIG, oldSafe) as PlatformConfig;
     return migrated;
   },
@@ -352,7 +353,6 @@ export async function loadConfig(options?: {
       });
       if (response.ok) {
         const remoteConfig = await response.json();
-        // Explicit cast mapping applied
         const merged = mergeConfig(DEFAULT_CONFIG, remoteConfig) as PlatformConfig;
         const errors = validateConfig(merged);
         if (errors.length === 0) {
@@ -368,7 +368,6 @@ export async function loadConfig(options?: {
   try {
     const localConfig = await idbGetConfig();
     if (localConfig) {
-      // Pastikan ada fallback jika struktur lokal korup/berubah
       const mergedLocal = mergeConfig(DEFAULT_CONFIG, localConfig as DeepPartial<PlatformConfig>);
       const errors = validateConfig(mergedLocal);
       if (errors.length === 0) {
