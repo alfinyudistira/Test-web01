@@ -8,7 +8,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 // Internal Systems
-import { useConfig, useAppStore } from '@/store/appStore';
+import { useConfig } from '@/store/appStore'; // PERBAIKAN: useAppStore dihapus karena addToast tidak dipakai
 import { formatters, cn, uid, haptic } from '@/lib/utils';
 import { useHaptic, useLocalStorage, useKeyboardShortcuts, useToast } from '@/hooks';
 import { Card, Button, Badge, Divider, ProgressBar, Tooltip, Kbd, Alert } from '@/components/ui';
@@ -55,7 +55,7 @@ const BENEFITS_CATALOG = [
   { id: 'bonus', label: 'Performance Bonus', valueUSD: 10000, icon: '🎯', description: 'Up to 15% of base' },
   { id: 'remote', label: 'Remote Stipend', valueUSD: 2400, icon: '🏠', description: 'Home office & internet' },
   { id: 'learning', label: 'Learning Budget', valueUSD: 3000, icon: '📚', description: 'Courses & conferences' },
-];
+] as const;
 
 function PercentileGauge({ percentile, color }: { percentile: number; color: string }) {
   const radius = 45;
@@ -96,7 +96,6 @@ export function SalaryBench() {
   const config = useConfig();
   const triggerHaptic = useHaptic();
   const toast = useToast();
-  const { addToast } = useAppStore(); // optional: gunakan store untuk notifikasi global
 
   // ── Persistent State (localStorage) ────────────────────────────────────
   const [level, setLevel] = useLocalStorage<'entry' | 'mid' | 'senior'>('salary_level', 'mid');
@@ -237,8 +236,14 @@ Negotiation Strategy: ${calibration.percentile > 75 ? 'Elite offer, focus on equ
   const minBase = 50_000_000;
   const maxBase = 5_000_000_000;
 
+  // PERBAIKAN: Menambahkan framer-motion wrap untuk efek elegan khas Masterpiece
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 pb-20">
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="grid grid-cols-1 xl:grid-cols-12 gap-8 pb-20"
+    >
       
       {/* LEFT COLUMN: CONFIGURATION & TOTAL REWARDS (5/12) */}
       <div className="xl:col-span-5 space-y-6">
@@ -268,8 +273,8 @@ Negotiation Strategy: ${calibration.percentile > 75 ? 'Elite offer, focus on equ
               </label>
               <select
                 value={level}
-                onChange={(e) => setLevel(e.target.value as any)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[var(--primary)]"
+                onChange={(e) => setLevel(e.target.value as 'entry' | 'mid' | 'senior')} // PERBAIKAN TYPE CASTING
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[var(--primary)] transition-colors"
                 aria-label="Market segment level"
               >
                 <option value="entry">Entry (0-3 Years)</option>
@@ -284,7 +289,7 @@ Negotiation Strategy: ${calibration.percentile > 75 ? 'Elite offer, focus on equ
               <select
                 value={targetCity}
                 onChange={(e) => setTargetCity(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[var(--primary)]"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[var(--primary)] transition-colors"
                 aria-label="Target city for cost of living adjustment"
               >
                 {Object.keys(CO_LIVING_INDEX).map(city => (
@@ -301,7 +306,7 @@ Negotiation Strategy: ${calibration.percentile > 75 ? 'Elite offer, focus on equ
                 <label className="font-mono text-[9px] text-zinc-500 uppercase tracking-widest ml-1">
                   Annual Base Salary ({currency})
                 </label>
-                <p className="text-2xl font-black text-white mt-1">
+                <p className="text-2xl font-black text-white mt-1 transition-all">
                   {formatters.currency(proposedBase, currency)}
                 </p>
               </div>
@@ -317,13 +322,13 @@ Negotiation Strategy: ${calibration.percentile > 75 ? 'Elite offer, focus on equ
               step={10_000_000}
               value={proposedBase}
               onChange={(e) => handleBaseChange(Number(e.target.value))}
-              className="w-full h-1.5 bg-zinc-800 rounded-full appearance-none cursor-pointer accent-[var(--primary)]"
+              className="w-full h-1.5 bg-zinc-800 rounded-full appearance-none cursor-pointer accent-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50"
               aria-label="Proposed base salary"
             />
-            <div className="flex justify-between text-2xs text-zinc-600">
-              <span>{formatters.currency(minBase, currency)}</span>
-              <span>P50: {formatters.currency(calibration.marketInTarget.p50, currency)}</span>
-              <span>{formatters.currency(maxBase, currency)}</span>
+            <div className="flex justify-between text-2xs text-zinc-600 font-mono">
+              <span>{formatters.currency(minBase, currency).split(',')[0]}</span>
+              <span>P50: {formatters.currency(calibration.marketInTarget.p50, currency).split(',')[0]}</span>
+              <span>{formatters.currency(maxBase, currency).split(',')[0]}</span>
             </div>
           </div>
 
@@ -338,8 +343,8 @@ Negotiation Strategy: ${calibration.percentile > 75 ? 'Elite offer, focus on equ
                   className={cn(
                     "p-4 rounded-2xl border text-left transition-all duration-200",
                     activeBenefits.includes(benefit.id)
-                      ? "bg-[var(--primary)]/10 border-[var(--primary)]/30 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]"
-                      : "bg-white/[0.02] border-white/5 hover:bg-white/[0.05]"
+                      ? "bg-[var(--primary)]/10 border-[var(--primary)]/50 shadow-[0_0_20px_rgba(var(--primary-rgb),0.15)] scale-[1.02]"
+                      : "bg-white/[0.02] border-white/5 hover:bg-white/[0.06]"
                   )}
                   aria-pressed={activeBenefits.includes(benefit.id)}
                 >
@@ -356,14 +361,14 @@ Negotiation Strategy: ${calibration.percentile > 75 ? 'Elite offer, focus on equ
           {/* Total Rewards Summary */}
           <div className="pt-4 border-t border-white/5 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-zinc-400">Total Package</span>
-              <span className="font-bold text-white">{formatters.currency(calibration.totalComp, currency)}</span>
+              <span className="text-zinc-400 font-medium">Total Package</span>
+              <span className="font-bold text-white tracking-wide">{formatters.currency(calibration.totalComp, currency)}</span>
             </div>
-            <div className="flex justify-between text-2xs text-zinc-500">
+            <div className="flex justify-between text-2xs text-zinc-500 font-mono">
               <span>Base: {((proposedBase / calibration.totalComp) * 100).toFixed(0)}%</span>
               <span>Benefits: {((calibration.benefitsValue / calibration.totalComp) * 100).toFixed(0)}%</span>
             </div>
-            <ProgressBar value={proposedBase} max={calibration.totalComp} color="#C8A97E" className="h-1" />
+            <ProgressBar value={proposedBase} max={calibration.totalComp} color="#C8A97E" className="h-1.5" />
           </div>
         </Card>
       </div>
@@ -394,15 +399,15 @@ Negotiation Strategy: ${calibration.percentile > 75 ? 'Elite offer, focus on equ
                 ]}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#18181b" vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: '#71717a', fontSize: 10 }} axisLine={false} />
+                <XAxis dataKey="name" tick={{ fill: '#71717a', fontSize: 10, fontWeight: 500 }} axisLine={false} />
                 <YAxis tickFormatter={(val) => formatters.currency(val, currency, 'id-ID').split(',')[0]} tick={{ fill: '#71717a', fontSize: 9 }} width={70} />
                 <RechartsTooltip
-                  cursor={{ fill: 'transparent' }}
+                  cursor={{ fill: 'rgba(255,255,255,0.02)' }}
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-zinc-950 border border-white/10 p-3 rounded-xl shadow-2xl">
-                          <p className="text-[10px] font-mono text-zinc-500 uppercase">{payload[0].payload.name}</p>
+                        <div className="bg-zinc-900 border border-white/10 p-3 rounded-xl shadow-2xl backdrop-blur-md">
+                          <p className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">{payload[0].payload.name}</p>
                           <p className="text-sm font-bold text-white">{formatters.currency(payload[0].value as number, currency)}</p>
                         </div>
                       );
@@ -410,16 +415,17 @@ Negotiation Strategy: ${calibration.percentile > 75 ? 'Elite offer, focus on equ
                     return null;
                   }}
                 />
-                <Bar dataKey="value" radius={[12, 12, 0, 0]}>
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                   {[0, 1, 2, 3, 4].map((idx) => (
                     <Cell
                       key={`cell-${idx}`}
                       fill={idx === 4 ? '#C8A97E' : '#27272a'}
-                      fillOpacity={idx === 4 ? 1 : 0.6}
+                      fillOpacity={idx === 4 ? 1 : 0.7}
+                      className="transition-all duration-300 hover:fill-opacity-100"
                     />
                   ))}
                 </Bar>
-                <ReferenceLine y={calibration.marketInTarget.p50} stroke="#71717a" strokeDasharray="3 3" label={{ value: 'Median', fill: '#71717a', fontSize: 9 }} />
+                <ReferenceLine y={calibration.marketInTarget.p50} stroke="#71717a" strokeDasharray="4 4" label={{ value: 'Median', fill: '#71717a', fontSize: 10, position: 'insideTopLeft' }} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -435,11 +441,11 @@ Negotiation Strategy: ${calibration.percentile > 75 ? 'Elite offer, focus on equ
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={calibration.radarData}>
                   <PolarGrid stroke="#27272a" />
-                  <PolarAngleAxis dataKey="city" tick={{ fill: '#71717a', fontSize: 8 }} />
+                  <PolarAngleAxis dataKey="city" tick={{ fill: '#a1a1aa', fontSize: 9 }} />
                   <PolarRadiusAxis angle={30} domain={[0, 200]} tick={{ fill: '#52525b', fontSize: 8 }} />
                   <Radar name="Benchmark (P50)" dataKey="benchmark" stroke="#ffffff" fill="#ffffff" fillOpacity={0.05} strokeDasharray="4 4" />
                   <Radar name="Your Offer" dataKey="offer" stroke="#C8A97E" fill="#C8A97E" fillOpacity={0.4} />
-                  <Legend wrapperStyle={{ fontSize: '8px', fontFamily: 'monospace' }} />
+                  <Legend wrapperStyle={{ fontSize: '9px', fontFamily: 'monospace', color: '#a1a1aa' }} />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
@@ -449,20 +455,20 @@ Negotiation Strategy: ${calibration.percentile > 75 ? 'Elite offer, focus on equ
             <div className="text-center">
               <p className="font-mono text-[9px] text-zinc-500 uppercase tracking-widest mb-1">Total Rewards Package</p>
               <h4 className="text-2xl font-black text-white">{formatters.currency(calibration.totalComp, currency).split(',')[0]}</h4>
-              <p className="text-2xs text-zinc-500 mt-1">({currency} / year)</p>
+              <p className="text-2xs text-zinc-500 mt-1 font-mono">({currency} / year)</p>
             </div>
-            <div className="w-full space-y-3">
-              <div className="space-y-1">
+            <div className="w-full space-y-4">
+              <div className="space-y-1.5">
                 <div className="flex justify-between text-[10px] font-mono">
-                  <span className="text-zinc-500">BASE SALARY</span>
-                  <span className="text-white">{((proposedBase / calibration.totalComp) * 100).toFixed(0)}%</span>
+                  <span className="text-zinc-400">BASE SALARY</span>
+                  <span className="text-white font-bold">{((proposedBase / calibration.totalComp) * 100).toFixed(0)}%</span>
                 </div>
                 <ProgressBar value={proposedBase} max={calibration.totalComp} color="#C8A97E" />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex justify-between text-[10px] font-mono">
-                  <span className="text-zinc-500">BENEFITS & PERKS</span>
-                  <span className="text-white">{((calibration.benefitsValue / calibration.totalComp) * 100).toFixed(0)}%</span>
+                  <span className="text-zinc-400">BENEFITS & PERKS</span>
+                  <span className="text-white font-bold">{((calibration.benefitsValue / calibration.totalComp) * 100).toFixed(0)}%</span>
                 </div>
                 <ProgressBar value={calibration.benefitsValue} max={calibration.totalComp} color="#3B82F6" />
               </div>
@@ -473,7 +479,7 @@ Negotiation Strategy: ${calibration.percentile > 75 ? 'Elite offer, focus on equ
         {/* Negotiation Playbook (Adaptive) */}
         <Alert
           variant={calibration.percentile > 75 ? 'success' : calibration.percentile > 45 ? 'info' : 'warning'}
-          className="border-l-4"
+          className="border-l-4 shadow-lg backdrop-blur-sm"
         >
           <div className="flex gap-3">
             <span className="text-xl">💡</span>
@@ -491,10 +497,10 @@ Negotiation Strategy: ${calibration.percentile > 75 ? 'Elite offer, focus on equ
         </Alert>
 
         {/* Additional Note: Exchange Rate Info */}
-        <div className="text-center text-2xs text-zinc-600">
+        <div className="text-center text-2xs text-zinc-600 font-mono mt-4">
           Exchange rate used: 1 USD = {fxRate.toFixed(2)} {currency} | PPP adjustment based on {targetCity} (factor {calibration.colFactor.toFixed(2)})
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
