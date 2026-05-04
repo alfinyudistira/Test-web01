@@ -5,13 +5,18 @@ import {
   useRef,
   useLayoutEffect,
   useMemo,
-  useReducer,
+} from 'react';
+import type { 
+  RefObject, 
+  EffectCallback, 
+  DependencyList 
 } from 'react';
 import { useDebounce as useDebouncedValue } from 'use-debounce';
 import { haptic, withViewTransition, debounce, throttle as throttleFn, uid } from '@/lib/utils';
 import { liveService } from '@/lib/liveService';
 import { db } from '@/lib/idb';
 import type { AppEvent, EventType, Candidate, PlatformConfig } from '@/types';
+import { isEqual } from 'lodash-es';
 
 export { useDebouncedValue };
 
@@ -31,7 +36,8 @@ export function useLiveEvent<T = unknown>(
   }, [type]);
 }
 
-export function useEnterpriseStorage<T>(key: keyof typeof db.candidates, initialValue: T) {
+// PERBAIKAN: Tipe key diperjelas agar sesuai dengan logika percabangan IDB
+export function useEnterpriseStorage<T>(key: 'candidates' | 'config', initialValue: T) {
   const [data, setData] = useState<T>(initialValue);
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
@@ -58,8 +64,8 @@ export function useEnterpriseStorage<T>(key: keyof typeof db.candidates, initial
     };
   }, [key]);
   const set = useCallback(async (value: T) => {
-    if (key === 'candidates') await db.candidates.set(value as Candidate[]);
-    else if (key === 'config') await db.config.set(value as PlatformConfig);
+    if (key === 'candidates') await db.candidates.set(value as unknown as Candidate[]);
+    else if (key === 'config') await db.config.set(value as unknown as PlatformConfig);
     setData(value);
   }, [key]);
   return { data, set, isLoading };
@@ -73,6 +79,7 @@ interface ShortcutConfig {
   alt?: boolean;
   action: () => void;
 }
+
 export function useKeyboardShortcuts(
   shortcuts: ShortcutConfig[] | Record<string, () => void>,
   options?: { ctrl?: boolean; shift?: boolean }
@@ -81,6 +88,7 @@ export function useKeyboardShortcuts(
     if (Array.isArray(shortcuts)) return shortcuts;
     return Object.entries(shortcuts).map(([key, action]) => ({ key, action }));
   }, [shortcuts]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -104,21 +112,27 @@ export function useKeyboardShortcuts(
 
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
   const read = useCallback(() => {
+    if (typeof window === 'undefined') return initialValue;
     try {
-      const item = localStorage.getItem(key);
+      const item = window.localStorage.getItem(key);
       return item ? (JSON.parse(item) as T) : initialValue;
     } catch {
       return initialValue;
     }
   }, [key, initialValue]);
+
   const [state, setState] = useState<T>(read);
+
   const set = useCallback((value: T) => {
     setState(value);
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-      window.dispatchEvent(new Event('local-storage-sync'));
-    } catch {}
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(key, JSON.stringify(value));
+        window.dispatchEvent(new Event('local-storage-sync'));
+      } catch {}
+    }
   }, [key]);
+
   useEffect(() => {
     const handleSync = () => setState(read());
     window.addEventListener('local-storage-sync', handleSync);
@@ -133,23 +147,29 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
 
 export function useSessionStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
   const read = useCallback(() => {
+    if (typeof window === 'undefined') return initialValue;
     try {
-      const item = sessionStorage.getItem(key);
+      const item = window.sessionStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch {
       return initialValue;
     }
   }, [key, initialValue]);
+
   const [state, setState] = useState<T>(read);
+
   const set = useCallback((value: T) => {
     setState(value);
-    try {
-      sessionStorage.setItem(key, JSON.stringify(value));
-    } catch {}
+    if (typeof window !== 'undefined') {
+      try {
+        window.sessionStorage.setItem(key, JSON.stringify(value));
+      } catch {}
+    }
   }, [key]);
+
   useEffect(() => {
     const handler = (e: StorageEvent) => {
-      if (e.key === key && e.storageArea === sessionStorage) setState(read());
+      if (e.key === key && e.storageArea === window.sessionStorage) setState(read());
     };
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
@@ -179,10 +199,13 @@ export function useIdle(timeoutMs: number = 300000): boolean {
 
 export function useDynamicTheme(primaryColor: string): void {
   useIsomorphicLayoutEffect(() => {
-    document.documentElement.style.setProperty('--color-primary', primaryColor);
-    document.documentElement.style.setProperty('--color-primary-rgb', hexToRgb(primaryColor));
+    if (typeof document !== 'undefined') {
+      document.documentElement.style.setProperty('--color-primary', primaryColor);
+      document.documentElement.style.setProperty('--color-primary-rgb', hexToRgb(primaryColor));
+    }
   }, [primaryColor]);
 }
+
 function hexToRgb(hex: string): string {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? `${parseInt(result[1], 16)} ${parseInt(result[2], 16)} ${parseInt(result[3], 16)}` : '200 169 126';
@@ -200,6 +223,7 @@ export function useMediaQuery(query: string): boolean {
   }, [query]);
   return matches;
 }
+
 export const useIsMobile = () => useMediaQuery('(max-width: 767px)');
 export const useIsTablet = () => useMediaQuery('(min-width: 768px) and (max-width: 1023px)');
 export const useIsDesktop = () => useMediaQuery('(min-width: 1024px)');
@@ -240,7 +264,7 @@ export function useCopyToClipboard(): [boolean, (text: string) => Promise<void>]
 
 export function useScrollLock(active: boolean): void {
   useEffect(() => {
-    if (!active) return;
+    if (!active || typeof document === 'undefined') return;
     const original = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
@@ -280,7 +304,7 @@ export function usePrevious<T>(value: T): T | undefined {
 export function useEventListener<K extends keyof WindowEventMap>(
   event: K,
   handler: (e: WindowEventMap[K]) => void,
-  target: Window | HTMLElement | null = window
+  target: Window | HTMLElement | null = typeof window !== 'undefined' ? window : null
 ): void {
   useEffect(() => {
     if (!target) return;
@@ -290,9 +314,10 @@ export function useEventListener<K extends keyof WindowEventMap>(
   }, [event, handler, target]);
 }
 
+// PERBAIKAN: Menggunakan RefObject eksplisit untuk menghindari error React
 export function useIntersectionObserver<T extends Element>(
   options?: IntersectionObserverInit
-): [React.RefObject<T>, boolean] {
+): [RefObject<T>, boolean] {
   const ref = useRef<T>(null);
   const [inView, setInView] = useState(false);
   useEffect(() => {
@@ -306,6 +331,9 @@ export function useIntersectionObserver<T extends Element>(
 
 export const useHaptic = () => useCallback((pattern: Parameters<typeof haptic>[0] = 'light') => haptic(pattern), []);
 export const useViewTransition = () => useCallback((fn: () => void) => withViewTransition(fn), []);
+
+// PERBAIKAN: Typing args generic untuk throttle
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useThrottle<T extends (...args: any[]) => any>(
   fn: T,
   delay: number
@@ -318,6 +346,7 @@ interface WindowSize {
   width: number;
   height: number;
 }
+
 export function useWindowSize(): WindowSize {
   const [size, setSize] = useState<WindowSize>(() => ({
     width: typeof window !== 'undefined' ? window.innerWidth : 0,
@@ -333,9 +362,10 @@ export function useWindowSize(): WindowSize {
   return size;
 }
 
+// PERBAIKAN: Menambahkan eksplisit RefObject typing
 export function useClickOutside<T extends HTMLElement = HTMLElement>(
   handler: (event: MouseEvent | TouchEvent) => void
-): React.RefObject<T> {
+): RefObject<T> {
   const ref = useRef<T>(null);
   useEffect(() => {
     const listener = (event: MouseEvent | TouchEvent) => {
@@ -352,7 +382,8 @@ export function useClickOutside<T extends HTMLElement = HTMLElement>(
   return ref;
 }
 
-export function useFocusTrap(active: boolean): React.RefObject<HTMLElement> {
+// PERBAIKAN: Menambahkan eksplisit RefObject typing
+export function useFocusTrap(active: boolean): RefObject<HTMLElement> {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!active || !ref.current) return;
@@ -376,7 +407,7 @@ export function useFocusTrap(active: boolean): React.RefObject<HTMLElement> {
     first?.focus();
     return () => trap.removeEventListener('keydown', handleKeydown);
   }, [active]);
-  return ref as React.RefObject<HTMLElement>;
+  return ref;
 }
 
 export function useRaf(callback: (time: number) => void, deps: unknown[] = []) {
@@ -400,13 +431,16 @@ export function useRaf(callback: (time: number) => void, deps: unknown[] = []) {
   }, deps);
 }
 
-import { isEqual } from 'lodash-es';
-function useDeepCompareMemoize(value: any) {
-  const ref = useRef<any>();
-  if (!isEqual(value, ref.current)) ref.current = value;
+// PERBAIKAN: Hapus pemakaian tipe 'any' dan ganti dengan Generics <T>
+function useDeepCompareMemoize<T>(value: T): T {
+  const ref = useRef<T>(value);
+  if (!isEqual(value, ref.current)) {
+    ref.current = value;
+  }
   return ref.current;
 }
-export function useDeepCompareEffect(effect: React.EffectCallback, deps: React.DependencyList) {
+
+export function useDeepCompareEffect(effect: EffectCallback, deps: DependencyList) {
   useEffect(effect, deps.map(useDeepCompareMemoize));
 }
 
@@ -433,6 +467,7 @@ interface UndoState<T> {
   present: T;
   future: T[];
 }
+
 export function useUndo<T>(initial: T): {
   state: T;
   set: (newState: T) => void;
