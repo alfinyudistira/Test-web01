@@ -3,6 +3,7 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import type { Locale } from '@/types';
 
+// FIX 1: Hapus "as const" di akhir objek ini
 const enTranslation = {
   app: {
     name: 'Pulse Hiring Intelligence',
@@ -75,13 +76,18 @@ const enTranslation = {
     risk_detected: 'Risk analysis: {{level}} detected',
     summary_gen: 'Generating executive summary...',
   },
-} as const;
+}; 
 
 // Type untuk autocomplete
 export type TranslationKey = keyof typeof enTranslation;
-export type NestedKey<T> = T extends object
-  ? { [K in keyof T]: K extends string ? (T[K] extends object ? `${K}.${NestedKey<T[K]>}` : K) : never }[keyof T]
-  : never;
+
+// FIX 2: Ubah NestedKey jadi flat 2-level agar tidak menyebabkan TS2589 (Excessively Deep)
+export type NestedKey<T> = {
+  [K in keyof T & string]: T[K] extends Record<string, unknown>
+    ? `${K}.${keyof T[K] & string}`
+    : K
+}[keyof T & string];
+
 export type I18nKey = NestedKey<typeof enTranslation>;
 
 export type LanguageCode = 'en' | 'id' | 'de' | 'fr' | 'ja' | 'zh-CN' | 'ar';
@@ -171,14 +177,13 @@ const idTranslation: typeof enTranslation = {
   },
 };
 
-// Inline resources (bisa ditambah untuk bahasa lain, tapi untuk demo cukup en & id)
 const resources: Partial<Record<LanguageCode, { translation: typeof enTranslation }>> = {
   en: { translation: enTranslation },
   id: { translation: idTranslation },
 };
 
-const loadedNamespaces = new Map<string, number>(); // key = "lang:ns", value = timestamp
-const NAMESPACE_TTL = 5 * 60 * 1000; // 5 menit
+const loadedNamespaces = new Map<string, number>();
+const NAMESPACE_TTL = 5 * 60 * 1000;
 
 export async function loadNamespace(lang: LanguageCode, ns: string): Promise<void> {
   const key = `${lang}:${ns}`;
@@ -186,7 +191,6 @@ export async function loadNamespace(lang: LanguageCode, ns: string): Promise<voi
   if (lastLoaded && Date.now() - lastLoaded < NAMESPACE_TTL) return;
 
   try {
-    // Dynamic import dari folder locales (sesuaikan path dengan struktur proyek)
     const module = await import(`./locales/${lang}/${ns}.json`);
     i18n.addResourceBundle(lang, ns, module.default, true, true);
     loadedNamespaces.set(key, Date.now());
@@ -227,7 +231,7 @@ export function getCurrentLanguageMeta(): LanguageMeta {
 export function tSafe(key: string, fallback?: string): string {
   const result = i18n.t(key);
   if (result === key || !result) return fallback ?? key;
-  return result;
+  return result as string; // FIX 3: Pastikan kembalian string
 }
 
 type LanguageChangeListener = (lang: LanguageCode) => void;
@@ -288,7 +292,7 @@ export async function initI18n(options?: { fallbackLng?: LanguageCode; debug?: b
     .use(LanguageDetector)
     .use(initReactI18next)
     .init({
-      resources: resources as any, // typecast karena kita hanya punya en & id inline
+      resources: resources as any,
       fallbackLng: [fallback],
       supportedLngs: SUPPORTED_LANGUAGES.map((l) => l.code),
       ns: ['common', 'app', 'nav', 'calculator', 'toast', 'ai'],
@@ -302,12 +306,10 @@ export async function initI18n(options?: { fallbackLng?: LanguageCode; debug?: b
       debug: options?.debug ?? import.meta.env.DEV,
     });
 
-  // Pastikan RTL diterapkan
   const currentLang = getCurrentLanguage();
   applyDirection(currentLang);
   emitLanguageChange(currentLang);
 
-  // Jika bahasa saat ini bukan en atau id (tidak ada inline), coba lazy load
   if (currentLang !== 'en' && currentLang !== 'id') {
     await loadLanguage(currentLang).catch(console.warn);
   }
@@ -315,8 +317,5 @@ export async function initI18n(options?: { fallbackLng?: LanguageCode; debug?: b
   initialized = true;
 }
 
-// ============================================================================
-// 11. EXPORT INSTANCE & TYPES
-// ============================================================================
 export default i18n;
-export type { LanguageCode, Locale }
+export type { LanguageCode, Locale };
