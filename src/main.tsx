@@ -19,6 +19,18 @@ import { ToastContainer } from '@/components/Toast';
 import { Confetti } from '@/components/Confetti';
 import { SVGDefs } from '@/components/ui';
 
+import { RouterProvider, createRouter } from '@tanstack/react-router';
+import { routeTree } from './routeTree.gen'; 
+
+const router = createRouter({ routeTree });
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
+
+
 // ── Lazy load main shell for smaller initial bundle
 const AppShell = lazy(() => import('@/components/AppShell').then(m => ({ default: m.AppShell })));
 
@@ -202,12 +214,10 @@ function RootApp() {
     return <LoadingSplash />;
   }
 
-  return (
+    return (
     <ReduxProvider store={reduxStore}>
       <AppErrorBoundary>
-        <Suspense fallback={<LoadingSplash />}>
-          <AppShell />
-        </Suspense>
+        <RouterProvider router={router} />
       </AppErrorBoundary>
       {/* Global overlay components */}
       <ToastContainer position="bottom-center" stackDirection="column-reverse" />
