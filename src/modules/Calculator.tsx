@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useState, useMemo, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,27 +9,22 @@ import {
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
 
-// Store & Hooks
 import { useAppStore, useConfig } from '@/store/appStore';
 import { useHaptic, useKeyboardShortcuts, useToast } from '@/hooks';
 import {
   evaluateCandidate,
   formatCurrency,
-  formatNumber,
   uid,
   cn,
   exportCandidatesCSV,
 } from '@/lib/utils';
 
-// UI Components
 import {
   Card, Button, Badge, ProgressBar, Divider,
-  ScoreChip, Input, Modal, Tooltip, Kbd,
-  Table, Avatar, Alert,
+  ScoreChip, Input, Tooltip, Kbd, Table, Avatar, Alert,
 } from '@/components/ui';
 
-// Types
-import type { Candidate, CandidateScore, ScoreValue, CandidateId, HireDecision } from '@/types';
+import type { Candidate, ScoreValue, CandidateId, HireDecision } from '@/types';
 
 const candidateSchema = z.object({
   firstName: z.string().min(1, 'First name required'),
@@ -131,7 +126,6 @@ function CandidateTable({
   filterDecision,
   onFilterChange,
 }: CandidateTableProps) {
-  const { t } = useTranslation();
   const config = useConfig();
 
   const filtered = useMemo(() => {
@@ -254,7 +248,6 @@ function CandidateTable({
 }
 
 export function Calculator() {
-  const { t } = useTranslation();
   const config = useConfig();
   const triggerHaptic = useHaptic();
   const toast = useToast();
@@ -273,7 +266,7 @@ export function Calculator() {
   const [filterDecision, setFilterDecision] = useState<HireDecision | 'ALL'>('ALL');
 
   // React Hook Form
-  const { control, register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<CandidateFormData>({
+  const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<CandidateFormData>({
     resolver: zodResolver(candidateSchema),
     defaultValues: {
       firstName: '',
