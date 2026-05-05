@@ -1,25 +1,15 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   PULSE VELOCITY ENGINE — MODULE 02: FUNNEL SIMULATOR (ENTERPRISE)
-   Bottleneck AI | ROI projection | Scenario modeling | Kinetic funnel
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useMemo, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
-  ResponsiveContainer, AreaChart, Area, Legend, Cell, ReferenceLine
+  ResponsiveContainer, AreaChart, Area, Legend
 } from 'recharts';
-import { useTranslation } from 'react-i18next';
 import { useConfig } from '@/store/appStore';
-import { formatters, cn, haptic, debounce } from '@/lib/utils';
-import { useHaptic, useIsMobile, useToast, useLocalStorage } from '@/hooks';
-import { Card, Button, Badge, Divider, ProgressBar, Tooltip as UITooltip, Kbd } from '@/components/ui';
+import { formatCurrency } from '@/lib/utils';
+import { useHaptic, useIsMobile, useLocalStorage } from '@/hooks';
+import { useToast } from '@/components/Toast';
+import { Card, Button, Badge, Divider, Tooltip as UITooltip, Alert } from '@/components/ui';
 
-// ============================================================================
-// 1. CONSTANTS & CONFIGURATION
-// ============================================================================
-
-const COST_PER_OPEN_DAY_USD = 800; // Base cost per day of vacancy (USD)
 const STAGES = [
   { id: 'sourcing',   label: 'Sourcing',   icon: '🔍', color: '#C8A97E', min: 1, max: 60, defaultVal: 20, optimMultiplier: 0.4, optimMin: 3 },
   { id: 'screening',  label: 'Screening',  icon: '📋', color: '#7EB5A6', min: 1, max: 30, defaultVal: 10, optimMultiplier: 0.35, optimMin: 2 },
@@ -28,8 +18,6 @@ const STAGES = [
 ] as const;
 
 type StageId = typeof STAGES[number]['id'];
-
-// Skenario preset
 type Scenario = 'default' | 'aggressive' | 'balanced';
 const SCENARIOS: Record<Scenario, Record<StageId, number>> = {
   default: Object.fromEntries(STAGES.map(s => [s.id, s.defaultVal])) as any,
@@ -47,9 +35,6 @@ const SCENARIOS: Record<Scenario, Record<StageId, number>> = {
   },
 };
 
-// ============================================================================
-// 2. HELPER: FUNNEL SEGMENT (kinetic bar dari versi B)
-// ============================================================================
 interface FunnelSegmentProps {
   label: string;
   icon: string;
@@ -123,11 +108,7 @@ function FunnelSegment({ label, icon, current, optimized, color, index, bottlene
   );
 }
 
-// ============================================================================
-// 3. MAIN FUNNEL MODULE
-// ============================================================================
 export function FunnelChart() {
-  const { t } = useTranslation();
   const config = useConfig();
   const triggerHaptic = useHaptic();
   const toast = useToast();
@@ -237,7 +218,7 @@ export function FunnelChart() {
     const report = `Pulse Hiring Funnel Report
 Current TTH: ${analytics.currentTotal} days
 Optimized TTH: ${analytics.optimizedTotal} days (${analytics.pctImprovement}% improvement)
-Annual Savings: ${formatters.currency(analytics.totalAnnualImpact, config.currency)}
+Annual Savings: ${formatCurrency(analytics.totalAnnualImpact, config.currency)}
 Bottleneck: ${analytics.bottleneck.stage} (+${analytics.bottleneck.gap} days)
 Sensitivity: ${analytics.sensitivity[0]?.stage || ''} (${formatters.currency(analytics.sensitivity[0]?.impact || 0, config.currency)})`;
     navigator.clipboard.writeText(report);
