@@ -89,11 +89,12 @@ if ('PerformanceObserver' in window) {
 const reportWebVitals = () => {
   if (import.meta.env.DEV) return;
   try {
-    import('web-vitals').then(({ getCLS, getFID, getLCP, getTTFB }) => {
-      getCLS(console.debug);
-      getFID(console.debug);
-      getLCP(console.debug);
-      getTTFB(console.debug);
+        import('web-vitals').then((vitals: any) => {
+      if (vitals.onCLS) vitals.onCLS(console.debug);
+      if (vitals.onFID) vitals.onFID(console.debug);
+      if (vitals.onINP) vitals.onINP(console.debug);
+      if (vitals.onLCP) vitals.onLCP(console.debug);
+      if (vitals.onTTFB) vitals.onTTFB(console.debug);
     });
   } catch {}
 };
@@ -173,8 +174,8 @@ function RootApp() {
         await useAppStore.getState().bootstrap();
 
         // 4. Real-time engine connection (WebSocket / SSE / mock)
-        liveService.connect({
-          baseUrl: import.meta.env.VITE_WS_URL || 'wss://api.pulse.app/live',
+          liveService.connect({
+          baseUrl: import.meta.env['VITE_WS_URL'] || 'wss://api.pulse.app/live',
           enableMock: import.meta.env.DEV,
           debug: import.meta.env.DEV,
         });
