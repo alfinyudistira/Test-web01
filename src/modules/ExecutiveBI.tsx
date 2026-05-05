@@ -9,7 +9,7 @@ import {
 import { useConfig, useStats, useCandidates } from '@/store/appStore';
 import { formatCurrency, formatNumber, cn } from '@/lib/utils';
 import { useHaptic, useIntersectionObserver, useIsMobile } from '@/hooks';
-import { Card, Button, Badge, Divider, SVGDefs, Skeleton, Modal } from '@/components/ui';
+import { Card, Button, Badge, SVGDefs, Skeleton } from '@/components/ui';
 import { useToast } from '@/components/Toast';
 
 // ── Palette ─────
@@ -59,7 +59,7 @@ function linearRegression(data: number[]): { slope: number; intercept: number; p
   const xs  = Array.from({ length: n }, (_, i) => i);
   const xMean = (n - 1) / 2;
   const yMean = data.reduce((a, b) => a + b, 0) / n;
-  const slope = xs.reduce((acc, x, i) => acc + (x - xMean) * (data[i] - yMean), 0) /
+    const slope = xs.reduce((acc, x, i) => acc + (x - xMean) * (data[i]! - yMean), 0) /
                 xs.reduce((acc, x) => acc + (x - xMean) ** 2, 0);
   const intercept = yMean - slope * xMean;
   return { slope, intercept, predict: (x: number) => slope * x + intercept };
@@ -144,7 +144,7 @@ function ConversionFunnel({ data }: { data: { stage: string; value: number; colo
     <div className="space-y-2" role="img" aria-label="Hiring funnel conversion rates">
       {data.map((d, i) => {
         const width = (d.value / max) * 100;
-        const convRate = i > 0 ? ((d.value / data[i - 1].value) * 100).toFixed(1) : '100';
+        const convRate = i > 0 ? ((d.value / data[i - 1]!.value) * 100).toFixed(1) : '100';
         return (
           <div key={d.stage} className="group">
             <div className="flex items-center justify-between mb-1">
@@ -299,8 +299,8 @@ function SourceScatter({ config }: { config: ReturnType<typeof useConfig> }) {
         <Tooltip
           cursor={{ strokeDasharray: '3 3' }}
           content={({ active, payload }) => {
-            if (!active || !payload?.length) return null;
-            const d = payload[0].payload;
+                        if (!active || !payload?.length) return null;
+            const d = payload[0]!.payload;
             return (
               <div className="bg-pulse-elevated border border-pulse-border rounded-lg p-3 font-mono text-xs">
                 <p className="text-pulse-gold font-bold mb-1">{d.source}</p>
@@ -324,8 +324,8 @@ function SourceScatter({ config }: { config: ReturnType<typeof useConfig> }) {
 
 // ── Waterfall chart (net hire change) ─────────────────────────────────────
 function WaterfallChart({ data }: { data: { month: string; hired: number }[] }) {
-  const waterfallData = data.map((d, i) => {
-    const prev = i > 0 ? data[i - 1].hired : 0;
+    const waterfallData = data.map((d, i) => {
+    const prev = i > 0 ? data[i - 1]!.hired : 0;
     const delta = d.hired - prev;
     return { month: d.month, base: Math.min(prev, d.hired), delta: Math.abs(delta), positive: delta >= 0, net: d.hired };
   });
@@ -492,8 +492,7 @@ function useReportExport(historical: ReturnType<typeof buildHistoricalData>, con
     haptic('medium');
    const latest = historical[historical.length - 1]!;
     const prev   = historical[historical.length - 2]!;
-    const tthTrend = ((prev.tth - latest.tth) / prev.tth * 100).toFixed(1);
-    const cphTrend = ((prev.costPerHire - latest.costPerHire) / prev.costPerHire * 100).toFixed(1);
+     const tthTrend = ((prev.tth - latest.tth) / prev.tth * 100).toFixed(1);
 
     const report = `
 ╔══════════════════════════════════════════════════════════╗
@@ -571,16 +570,11 @@ type BITab = typeof BI_TABS[number]['id'];
 
 // ── Main ExecutiveBI ───────────────────────────────────────────────────────
 export function ExecutiveBI() {
-  const config    = useConfig();
+    const config    = useConfig();
   const stats     = useStats();
-  const candidates = useCandidates();
   const haptic    = useHaptic();
-  const toast     = useToast();
   const isMobile  = useIsMobile();
-
   const [activeTab, setActiveTab] = useState<BITab>('overview');
-
-  // Build full historical dataset
   const historical = useMemo(() => buildHistoricalData(), []);
 
   // Derived KPIs from historical + store
@@ -606,8 +600,8 @@ export function ExecutiveBI() {
   // Source ROI: cost-efficiency score = QoH / (costPerHire / median)
   const medianCPH = useMemo(() => {
     const sorted = [...SOURCE_DATA].sort((a, b) => (a.cost / a.hired) - (b.cost / b.hired));
-    const mid = Math.floor(sorted.length / 2);
-    return (sorted[mid].cost / sorted[mid].hired);
+        const mid = Math.floor(sorted.length / 2);
+    return (sorted[mid]!.cost / sorted[mid]!.hired);
   }, []);
 
   const sourceROI = useMemo(() =>
@@ -812,7 +806,7 @@ export function ExecutiveBI() {
                         <div className="h-1.5 bg-pulse-muted rounded-full overflow-hidden">
                           <motion.div className="h-full rounded-full" style={{ background: s.color }}
                             initial={{ width: 0 }}
-                            animate={{ width: `${(s.roiScore / sourceROI[0].roiScore) * 100}%` }}
+                            animate={{ width: `${(s.roiScore / sourceROI[0]!.roiScore) * 100}%` }}
                             transition={{ duration: 0.8, delay: i * 0.07 }}
                           />
                         </div>
@@ -844,8 +838,8 @@ export function ExecutiveBI() {
                   <YAxis tick={{ fill: '#444', fontSize: 9 }} axisLine={false} tickLine={false}
                     tickFormatter={(v) => formatCurrency(v, config.currency, config.locale).slice(0, 8)} />
                   <Tooltip content={(props) => {
-                    if (!props.active || !props.payload?.length) return null;
-                    const d = props.payload[0].payload;
+                      if (!props.active || !props.payload?.length) return null;
+                    const d = props.payload[0]!.payload;
                     return (
                       <div className="bg-pulse-elevated border border-pulse-border rounded-lg p-3 font-mono text-xs">
                         <p className="text-pulse-gold font-bold mb-1">{props.label}</p>
