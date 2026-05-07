@@ -31,6 +31,7 @@ export default defineConfig(({ mode }) => {
   const isDev = mode === 'development';
 
   return {
+    base: '/Test-web01/',
     plugins: [
       TanStackRouterVite({
         target: 'react',
