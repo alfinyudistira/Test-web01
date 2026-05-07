@@ -113,11 +113,11 @@ const initialLang = detectInitialLanguage();
 applyDirectionAndLang(initialLang);
 
 window.onerror = (message, source, lineno, colno, error) => {
-  console.error('[Global Error]', { message, source, lineno, colno, error });
+  alert(`💥 ERROR BANG!\n${message}\n\nLokasi: Baris ${lineno}`);
 };
 
 window.onunhandledrejection = (event) => {
-  console.error('[Unhandled Rejection]', event.reason);
+  alert(`💥 PROMISE ERROR!\n${event.reason}`);
 };
 
 if ('PerformanceObserver' in window) {
