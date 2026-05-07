@@ -22,7 +22,10 @@ import { SVGDefs } from '@/components/ui';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { routeTree } from './routeTree.gen'; 
 
-const router = createRouter({ routeTree });
+const router = createRouter({ 
+  routeTree,
+  basepath: '/Test-web01/'
+});
 
 declare module '@tanstack/react-router' {
   interface Register {
