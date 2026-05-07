@@ -26,12 +26,14 @@ import { ToastContainer } from '@/components/Toast';
 import { Confetti } from '@/components/Confetti';
 import { SVGDefs } from '@/components/ui';
 
-import { RouterProvider, createRouter } from '@tanstack/react-router';
+import { RouterProvider, createRouter, createHashHistory } from '@tanstack/react-router';
 import { routeTree } from './routeTree.gen'; 
 
 // ── Router Setup (Dengan Basepath untuk GitHub Pages) ──
+const hashHistory = createHashHistory();
 const router = createRouter({ 
   routeTree,
+  history: hashHistory,
   basepath: '/Test-web01/'
 });
 
