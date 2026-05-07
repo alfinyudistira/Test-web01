@@ -50,14 +50,6 @@ const createQueryClient = () => new QueryClient({
 // Singleton instance
 const queryClient = createQueryClient();
 
-const router = createRouter({ routeTree });
-
-declare module '@tanstack/react-router' {
-  interface Register {
-    router: typeof router;
-  }
-}
-
 onlineManager.setEventListener((setOnline) => {
   const onOnline = () => setOnline(true);
   const onOffline = () => setOnline(false);
@@ -115,8 +107,6 @@ function AppContent() {
   return (
     <>
       <SVGDefs />
-
-<RouterProvider router={router} />
 
       {/* Global overlays */}
       <ToastContainer position="bottom-center" stackDirection="column-reverse" />
