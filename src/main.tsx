@@ -1,19 +1,26 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider as ReduxProvider } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// ── Core Assets & Configuration
+// ── Imports dari App.tsx (Query, Analytics, Theme) ──
+import { QueryClient, QueryClientProvider, focusManager, onlineManager } from '@tanstack/react-query';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
+import { useDynamicTheme } from '@/hooks';
+import { ModuleErrorBoundary } from '@/components/ErrorBoundary';
+
+// ── Core Assets & Configuration ──
 import './index.css';
 import { initI18n, SUPPORTED_LANGUAGES, type LanguageCode } from '@/i18n';
 import { reduxStore } from '@/store/reduxStore';
-import { useAppStore } from '@/store/appStore';
+import { useAppStore, useConfig } from '@/store/appStore';
 import { initIDB } from '@/lib/idb';
 import { liveService } from '@/lib/liveService';
 import { preloadAllModules } from '@/components/AppShell';
 import { haptic } from '@/lib/utils';
 
-// ── Global UI Components
+// ── Global UI Components ──
 import { AppErrorBoundary } from '@/components/ErrorBoundary';
 import { ToastContainer } from '@/components/Toast';
 import { Confetti } from '@/components/Confetti';
@@ -22,6 +29,7 @@ import { SVGDefs } from '@/components/ui';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { routeTree } from './routeTree.gen'; 
 
+// ── Router Setup (Dengan Basepath untuk GitHub Pages) ──
 const router = createRouter({ 
   routeTree,
   basepath: '/Test-web01/'
@@ -33,8 +41,45 @@ declare module '@tanstack/react-router' {
   }
 }
 
+// ── Query Client Setup (Dari App.tsx) ──
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,           // 5 minutes
+      gcTime: 1000 * 60 * 30,             // 30 minutes garbage collection
+      retry: (failureCount, error: any) => {
+        if (error?.status === 404) return false;
+        return failureCount < 2;
+      },
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      networkMode: 'always',
+    },
+    mutations: {
+      retry: 1,
+      networkMode: 'always',
+    },
+  },
+});
 
-// ── Lazy load main shell for smaller initial bundle
+onlineManager.setEventListener((setOnline) => {
+  const onOnline = () => setOnline(true);
+  const onOffline = () => setOnline(false);
+  window.addEventListener('online', onOnline);
+  window.addEventListener('offline', onOffline);
+  return () => {
+    window.removeEventListener('online', onOnline);
+    window.removeEventListener('offline', onOffline);
+  };
+});
+
+focusManager.setEventListener((handleFocus) => {
+  const onFocus = () => handleFocus(true);
+  window.addEventListener('visibilitychange', onFocus, false);
+  return () => window.removeEventListener('visibilitychange', onFocus);
+});
+
+// ── Lazy load main shell ──
 const AppShell = lazy(() => import('@/components/AppShell').then(m => ({ default: m.AppShell })));
 
 const safeStorage = {
@@ -59,7 +104,6 @@ const detectInitialLanguage = (): LanguageCode => {
   const stored = safeStorage.get('i18nextLng') || safeStorage.get('pulse_lang');
   const navLang = navigator.language?.split('-')[0] || 'en';
   const raw = (stored ?? navLang).toLowerCase();
-  // Validate against supported languages
   return SUPPORTED_LANGUAGES.some(l => l.code === raw) ? (raw as LanguageCode) : 'en';
 };
 
@@ -68,7 +112,6 @@ applyDirectionAndLang(initialLang);
 
 window.onerror = (message, source, lineno, colno, error) => {
   console.error('[Global Error]', { message, source, lineno, colno, error });
-  // In production, you would send to Sentry / LogRocket
 };
 
 window.onunhandledrejection = (event) => {
@@ -88,11 +131,10 @@ if ('PerformanceObserver' in window) {
   } catch {}
 }
 
-// Web Vitals reporting (lightweight)
 const reportWebVitals = () => {
   if (import.meta.env.DEV) return;
   try {
-        import('web-vitals').then((vitals: any) => {
+    import('web-vitals').then((vitals: any) => {
       if (vitals.onCLS) vitals.onCLS(console.debug);
       if (vitals.onFID) vitals.onFID(console.debug);
       if (vitals.onINP) vitals.onINP(console.debug);
@@ -161,29 +203,26 @@ function LoadingSplash() {
 function RootApp() {
   const [isReady, setIsReady] = useState(false);
   const [bootstrapError, setBootstrapError] = useState<Error | null>(null);
+  
+  // ── Hook dari App.tsx (Penting untuk UI) ──
+  const config = useConfig();
+  useDynamicTheme(config.branding.primaryColor);
 
   useEffect(() => {
     let mounted = true;
 
     async function bootstrap() {
       try {
-        // 1. Initialize i18n (asynchronous, but RTL already set)
         await initI18n({ fallbackLng: 'en', debug: import.meta.env.DEV });
-
-        // 2. IndexedDB (offline-first)
         await initIDB();
-
-        // 3. Zustand store bootstrap (load config & candidates)
         await useAppStore.getState().bootstrap();
-
-        // 4. Real-time engine connection (WebSocket / SSE / mock)
-          liveService.connect({
+        
+        liveService.connect({
           baseUrl: import.meta.env['VITE_WS_URL'] || 'wss://api.pulse.app/live',
           enableMock: import.meta.env.DEV,
           debug: import.meta.env.DEV,
         });
 
-        // 5. Preload all modules after idle (performance boost)
         requestIdleCallback(() => preloadAllModules(), { timeout: 2000 });
 
         if (mounted) setIsReady(true);
@@ -197,7 +236,21 @@ function RootApp() {
     return () => { mounted = false; };
   }, []);
 
-  // Render error fallback
+  // ── Devtools Memo dari App.tsx ──
+  const Devtools = useMemo(() => {
+    if (import.meta.env.DEV) {
+      const DevtoolsComponent = React.lazy(() =>
+        import('@tanstack/react-query-devtools').then(m => ({ default: m.ReactQueryDevtools }))
+      );
+      return () => (
+        <Suspense fallback={null}>
+          <DevtoolsComponent initialIsOpen={false} buttonPosition="bottom-left" />
+        </Suspense>
+      );
+    }
+    return () => null;
+  }, []);
+
   if (bootstrapError) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-black p-6 text-center">
@@ -218,15 +271,27 @@ function RootApp() {
     return <LoadingSplash />;
   }
 
-    return (
+  return (
     <ReduxProvider store={reduxStore}>
-      <AppErrorBoundary>
-        <RouterProvider router={router} />
-      </AppErrorBoundary>
-      {/* Global overlay components */}
-      <ToastContainer position="bottom-center" stackDirection="column-reverse" />
-      <Confetti type="full" duration={4000} />
-      <SVGDefs />
+      <QueryClientProvider client={queryClient}>
+        <AppErrorBoundary>
+          <ModuleErrorBoundary moduleName="Root" variant="full-page">
+            <RouterProvider router={router} />
+          </ModuleErrorBoundary>
+        </AppErrorBoundary>
+        
+        <ToastContainer position="bottom-center" stackDirection="column-reverse" />
+        <Confetti type="full" duration={4000} />
+        <SVGDefs />
+
+        {import.meta.env.PROD && (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        )}
+      </QueryClientProvider>
+      <Devtools />
     </ReduxProvider>
   );
 }
@@ -241,7 +306,6 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
           if (installingWorker) {
             installingWorker.onstatechange = () => {
               if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // New version available -> notify user (via event bus)
                 emit('sw:update-available');
                 haptic('success');
                 console.info('[SW] Update ready, please refresh.');
@@ -257,7 +321,6 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Root element #root not found');
 
-// Apply primary theme color CSS variable early (avoid FOUC)
 const config = useAppStore.getState().config;
 if (config?.branding?.primaryColor) {
   document.documentElement.style.setProperty('--primary', config.branding.primaryColor);
@@ -275,4 +338,3 @@ ReactDOM.createRoot(rootElement).render(
 );
 
 export { eventBus, featureFlags };
-
