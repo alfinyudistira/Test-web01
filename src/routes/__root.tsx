@@ -1,6 +1,5 @@
 import React from 'react'
 import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/router-devtools'
 import { motion } from 'framer-motion'
 
 export const Route = createRootRoute({
@@ -24,8 +23,6 @@ export const Route = createRootRoute({
       <main className="max-w-7xl mx-auto px-6 py-8">
         <Outlet />
       </main>
-
-      <TanStackRouterDevtools />
     </div>
   ),
 })
@@ -41,4 +38,3 @@ function NavLink({ to, children }: { to: string, children: React.ReactNode }) {
     </Link>
   )
 }
-
