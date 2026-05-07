@@ -2,6 +2,9 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
+    
+    <base href="/Test-web01/" />
+
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
@@ -14,7 +17,7 @@
     <title>%VITE_APP_NAME% — Enterprise Talent Acquisition Platform</title>
     <meta name="description" content="Science-backed, bias-free hiring decisions for global enterprises. Fit scoring, funnel analytics, D&I dashboard, executive BI." />
     <meta name="keywords" content="hiring platform, talent acquisition, HR analytics, AI hiring, fit calculator, SaaS, enterprise HR" />
-    <meta name="author" content="Alfin Maulana Yudistira" />
+    <meta name="author" content="Alfin Yudistira" />
     <meta name="robots" content="index, follow" />
 
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -34,7 +37,7 @@
       http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
-        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live;
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://unpkg.com;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         font-src 'self' https://fonts.gstatic.com data:;
         img-src 'self' data: https:;
@@ -113,6 +116,9 @@
       <div class="pulse-ring"></div>
       <div class="loader-text">Initializing Engine...</div>
     </div>
+
+    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+    <script>var vConsole = new window.VConsole();</script>
 
     <script type="module" src="/src/main.tsx"></script>
 
