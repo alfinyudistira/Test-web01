@@ -26,24 +26,6 @@ import { ToastContainer } from '@/components/Toast';
 import { Confetti } from '@/components/Confetti';
 import { SVGDefs } from '@/components/ui';
 
-import { RouterProvider, createRouter, createHashHistory } from '@tanstack/react-router';
-import { routeTree } from './routeTree.gen'; 
-
-// ── Router Setup (Dengan Basepath untuk GitHub Pages) ──
-const hashHistory = createHashHistory();
-const router = createRouter({ 
-  routeTree,
-  history: hashHistory,
-  basepath: '/Test-web01/'
-});
-
-declare module '@tanstack/react-router' {
-  interface Register {
-    router: typeof router;
-  }
-}
-
-// ── Query Client Setup (Dari App.tsx) ──
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -205,8 +187,7 @@ function LoadingSplash() {
 function RootApp() {
   const [isReady, setIsReady] = useState(false);
   const [bootstrapError, setBootstrapError] = useState<Error | null>(null);
-  
-  // ── Hook dari App.tsx (Penting untuk UI) ──
+  const showApp = useAppStore((s) => s.showApp); 
   const config = useConfig();
   useDynamicTheme(config.branding.primaryColor);
 
@@ -272,13 +253,29 @@ function RootApp() {
   if (!isReady) {
     return <LoadingSplash />;
   }
-
   return (
     <ReduxProvider store={reduxStore}>
       <QueryClientProvider client={queryClient}>
         <AppErrorBoundary>
           <ModuleErrorBoundary moduleName="Root" variant="full-page">
-            <RouterProvider router={router} />
+            
+            <AnimatePresence mode="wait">
+              {showApp ? (
+                <Suspense fallback={<LoadingSplash />}>
+                  <AppShell />
+                </Suspense>
+              ) : (
+                <div className="flex items-center justify-center min-h-screen text-white">
+                   <button 
+                     onClick={() => useAppStore.getState().setShowApp(true)}
+                     className="px-8 py-4 bg-pulse-gold text-black font-bold rounded-full hover:scale-105 transition-transform"
+                   >
+                     ENTER PULSE IQ
+                   </button>
+                </div>
+              )}
+            </AnimatePresence>
+
           </ModuleErrorBoundary>
         </AppErrorBoundary>
         
