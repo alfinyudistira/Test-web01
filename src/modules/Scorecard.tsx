@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Internal Systems
-import { useAppDispatch, useAppSelector } from '@/store/reduxstore';
+import { useAppDispatch, useAppSelector } from '@/store/reduxStore';
 import { generateAISummary } from '@/store/pipelineSlice';
 import { useConfig } from '@/store/appStore';
 import { useHaptic, useCopyToClipboard, useKeyboardShortcuts, useLocalStorage, useToast } from '@/hooks';
