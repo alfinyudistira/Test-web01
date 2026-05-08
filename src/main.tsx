@@ -296,28 +296,6 @@ function RootApp() {
   );
 }
 
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(registration => {
-        console.info('[SW] Registered scope:', registration.scope);
-        registration.onupdatefound = () => {
-          const installingWorker = registration.installing;
-          if (installingWorker) {
-            installingWorker.onstatechange = () => {
-              if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                emit('sw:update-available');
-                haptic('success');
-                console.info('[SW] Update ready, please refresh.');
-              }
-            };
-          }
-        };
-      })
-      .catch(err => console.warn('[SW] Registration failed:', err));
-  });
-}
-
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Root element #root not found');
 
