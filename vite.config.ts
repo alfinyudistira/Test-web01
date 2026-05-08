@@ -1,33 +1,191 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 import tailwindcss from '@tailwindcss/vite';
+import { VitePWA } from 'vite-plugin-pwa';
+import { visualizer } from 'rollup-plugin-visualizer';
+import viteCompression from 'vite-plugin-compression';
+import legacy from '@vitejs/plugin-legacy';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 import path from 'path';
+import { z } from 'zod';
 
-export default defineConfig({
-  base: '/Test-web01/',
-  plugins: [
-    TanStackRouterVite({
-      target: 'react',
-      autoCodeSplitting: true,
-    }),
-    tailwindcss(),
-    react(),
-  ],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@components': path.resolve(__dirname, './src/components'),
-      '@ui': path.resolve(__dirname, './src/components/ui'),
-      '@hooks': path.resolve(__dirname, './src/hooks'),
-      '@i18n': path.resolve(__dirname, './src/i18n'),
-      '@lib': path.resolve(__dirname, './src/lib'),
-      '@modules': path.resolve(__dirname, './src/modules'),
-      '@store': path.resolve(__dirname, './src/store'),
-      '@types': path.resolve(__dirname, './src/types'),
-    },
-  },
-  build: {
-    target: 'es2020',
+const r = (p: string) => path.resolve(__dirname, p);
+const envSchema = z.object({
+  VITE_APP_NAME: z.string().trim().default('Pulse Hiring Intelligence'),
+  VITE_API_URL: z.string().url().optional(),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  SENTRY_AUTH_TOKEN: z.string().optional(),
+});
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const parsedEnv = envSchema.safeParse(env);
+  
+  if (!parsedEnv.success && mode === 'production') {
+    console.error('❌ Invalid environment variables:', parsedEnv.error.format());
+    process.exit(1);
   }
+
+  const isProd = mode === 'production';
+  const isDev = mode === 'development';
+
+  return {
+    base: '/Test-web01/',
+    plugins: [
+      TanStackRouterVite({
+        target: 'react',
+        autoCodeSplitting: true,
+        routeFileIgnorePrefix: '-',
+        generatedRouteTree: './src/routeTree.gen.ts',
+      }),
+
+      tailwindcss(),
+      react({
+        babel: {
+          plugins: isProd ? [['babel-plugin-react-compiler', { target: '19' }]] : [],
+        },
+      }),
+
+      VitePWA({
+        registerType: 'autoUpdate',
+        injectRegister: 'auto',
+        includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png', 'icons/*'],
+        manifest: {
+          name: env.VITE_APP_NAME || 'Pulse Hiring Intelligence',
+          short_name: 'PulseHR',
+          description: 'Enterprise-Grade Universal SaaS Platform for Global Talent Acquisition',
+          theme_color: '#0D0D0D',
+          background_color: '#0D0D0D',
+          display: 'standalone',
+          orientation: 'portrait-primary',
+          start_url: '/',
+          categories: ['business', 'productivity', 'hr'],
+          icons: [
+            { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+            { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+          ],
+        },
+        workbox: {
+          cleanupOutdatedCaches: true,
+          sourcemap: true,
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,woff,ttf}'],
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+              handler: 'CacheFirst',
+              options: { cacheName: 'google-fonts', expiration: { maxAgeSeconds: 60 * 60 * 24 * 365 } },
+            },
+            {
+              urlPattern: /^https:\/\/api\./i,
+              handler: 'NetworkFirst',
+              options: { cacheName: 'api-cache', networkTimeoutSeconds: 5, expiration: { maxEntries: 100, maxAgeSeconds: 60 * 10 } },
+            },
+          ],
+        },
+        devOptions: { enabled: isDev },
+      }),
+
+      isProd && viteCompression({ algorithm: 'gzip', threshold: 1024, deleteOriginalAssets: false }),
+      process.env.VISUALIZE === 'true' && visualizer({ open: true, gzipSize: true, brotliSize: true }) as PluginOption,
+      isProd && legacy({ targets: ['defaults', 'not IE 11'], modernPolyfills: true }),
+      isProd && env.SENTRY_AUTH_TOKEN && sentryVitePlugin({
+        org: "pulse-org", // Ganti dengan org Sentry nanti
+        project: "pulse-hiring-intelligence", // Ganti dengan project Sentry nanti
+        authToken: env.SENTRY_AUTH_TOKEN,
+        telemetry: false,
+      }),
+
+    ].filter(Boolean) as PluginOption[],
+
+    resolve: {
+      alias: {
+        '@': r('./src'),
+        '@components': r('./src/components'),
+        '@ui': r('./src/components/ui'),
+        '@hooks': r('./src/hooks'),
+        '@i18n': r('./src/i18n'),
+        '@lib': r('./src/lib'),
+        '@modules': r('./src/modules'),
+        '@store': r('./src/store'),
+        '@types': r('./src/types'),
+      },
+    },
+
+    define: {
+      __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+      __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.npm_package_version),
+    },
+
+    server: {
+      port: 5173,
+      host: true,
+      open: true,
+      strictPort: true,
+      cors: true,
+      warmup: {
+        clientFiles: ['./src/main.tsx', './src/App.tsx'],
+      },
+    },
+
+    preview: {
+      port: 5173,
+      host: true,
+      strictPort: true,
+      headers: {
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+        'Cross-Origin-Opener-Policy': 'same-origin',
+      },
+    },
+
+    build: {
+      target: 'esnext',
+      sourcemap: isProd ? 'hidden' : true,
+      minify: 'esbuild',
+      cssMinify: 'esbuild',
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          assetFileNames: 'assets/[name]-[hash][extname]',
+          chunkFileNames: 'chunks/[name]-[hash].js',
+          entryFileNames: 'entries/[name]-[hash].js',
+        },
+      },
+      reportCompressedSize: true,
+      commonjsOptions: { include: [/node_modules/] },
+    },
+
+    optimizeDeps: {
+      include: [
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        'zustand',
+        '@tanstack/react-query',
+        '@tanstack/react-router',
+        'clsx',
+        'tailwind-merge',
+      ],
+      exclude: ['@tailwindcss/vite'],
+      esbuildOptions: { target: 'esnext' },
+    },
+
+    css: {
+      devSourcemap: true,
+      modules: {
+        localsConvention: 'camelCaseOnly',
+      },
+    },
+
+    esbuild: {
+      logOverride: { 'this-is-undefined-in-esm': 'silent' },
+      supported: { 'top-level-await': true },
+    },
+
+    worker: {
+      format: 'es',
+      plugins: () => [react()],
+    },
+  };
 });
