@@ -489,6 +489,11 @@ export const formatters = {
     new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(value)),
 };
 
+export const exportCsv = (data: any[], filename: string) => {
+  console.log("Exporting CSV:", filename);
+  alert("Fitur Export CSV sedang dalam perbaikan");
+};
+
 export function isMobile(): boolean {
   return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
