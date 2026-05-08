@@ -1,6 +1,5 @@
 @import "tailwindcss";
-@source "../index.html";
-@source "../src";
+@source "../**/*.{html,js,ts,jsx,tsx}";
 
 :root {
   --color-bg: 13 13 13;
