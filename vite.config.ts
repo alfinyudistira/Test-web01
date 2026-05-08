@@ -147,22 +147,6 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
-          manualChunks: {
-            'react-core': ['react', 'react-dom'],
-            'router': ['@tanstack/react-router'],
-            'query': ['@tanstack/react-query', '@tanstack/react-table'],
-            'state': ['zustand', '@reduxjs/toolkit', 'react-redux'],
-            'motion': ['framer-motion'],
-            'ui': ['clsx', 'tailwind-merge', 'class-variance-authority', 'lucide-react'],
-            'forms': ['react-hook-form', 'zod', '@hookform/resolvers'],
-            'schema': ['@rjsf/core', '@rjsf/validator-ajv8'],
-            'charts': ['recharts'],
-            'i18n': ['react-i18next', 'i18next', 'i18next-browser-languagedetector'],
-            'toast': ['sonner'],
-            'utils': ['date-fns', 'fuse.js', 'use-debounce', 'react-use'],
-            'sentry': ['@sentry/react'],
-            'security': ['dompurify'],
-          },
           assetFileNames: 'assets/[name]-[hash][extname]',
           chunkFileNames: 'chunks/[name]-[hash].js',
           entryFileNames: 'entries/[name]-[hash].js',
