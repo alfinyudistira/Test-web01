@@ -1,12 +1,7 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// QUESTION BANK MODULE — Structured Interview Question Repository
-// Filterable by competency/type/difficulty, AI generator via Claude API,
-// fuzzy search, copy-to-clipboard, custom question editor, export pack
-// ═══════════════════════════════════════════════════════════════════════════
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useDebouncedValue } from 'use-debounce';
+import { useDebounce as useDebouncedValue } from "use-debounce";
 import { useQuery } from '@tanstack/react-query';
 import { useConfig } from '@/store/appStore';
 import { useHaptic, useCopyToClipboard } from '@/hooks';
