@@ -475,6 +475,20 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
+export const formatters = {
+  currency: (value: number, currency = 'USD') => 
+    new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(value),
+  
+  number: (value: number) => 
+    new Intl.NumberFormat('en-US').format(value),
+  
+  compactNumber: (value: number) => 
+    new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value),
+  
+  date: (value: string | Date) => 
+    new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(value)),
+};
+
 export function isMobile(): boolean {
   return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
