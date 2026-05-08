@@ -1,16 +1,8 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   PULSE DESIGN SYSTEM — ENTERPRISE UI PRIMITIVES v3.0
-   Accessible | Motion-rich | Theme-aware | Type-safe | Production-ready
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 import React, { forwardRef, useMemo, useState, useRef, useEffect, ReactNode } from 'react';
-import { motion, AnimatePresence, HTMLMotionProps } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useScrollLock, useHaptic } from '@/hooks';
 
-// ============================================================================
-// 1. MOTION PRESETS (centralized)
-// ============================================================================
 const MOTION = {
   fadeIn: { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } },
   scaleIn: { initial: { opacity: 0, scale: 0.95 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.95 } },
@@ -18,9 +10,6 @@ const MOTION = {
   slideDown: { initial: { opacity: 0, y: -12 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -12 } },
 };
 
-// ============================================================================
-// 2. BUTTON (gabungan A + B + fitur tambahan)
-// ============================================================================
 type ButtonVariant = 'primary' | 'secondary' | 'glass' | 'ghost' | 'danger' | 'success';
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -88,9 +77,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 );
 Button.displayName = 'Button';
 
-// ============================================================================
-// 3. CARD (gabungan A + B)
-// ============================================================================
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'glass' | 'outline';
   hover?: boolean;
@@ -119,9 +105,6 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
 );
 Card.displayName = 'Card';
 
-// ============================================================================
-// 4. BADGE (gabungan A + B)
-// ============================================================================
 type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' | 'gold';
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
@@ -159,9 +142,6 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
 );
 Badge.displayName = 'Badge';
 
-// ============================================================================
-// 5. MODAL (gabungan A + B + ESC handler)
-// ============================================================================
 interface ModalProps {
   open: boolean;
   onClose: () => void;
@@ -227,9 +207,6 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
   );
 }
 
-// ============================================================================
-// 6. INPUT (dengan label, error, icon)
-// ============================================================================
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
@@ -269,9 +246,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 );
 Input.displayName = 'Input';
 
-// ============================================================================
-// 7. TEXTAREA (auto-resize opsional)
-// ============================================================================
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
@@ -315,9 +289,6 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
 );
 Textarea.displayName = 'Textarea';
 
-// ============================================================================
-// 8. SELECT (dengan floating label style)
-// ============================================================================
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
@@ -356,9 +327,6 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
 );
 Select.displayName = 'Select';
 
-// ============================================================================
-// 9. SWITCH (toggle)
-// ============================================================================
 interface SwitchProps {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
@@ -400,9 +368,6 @@ export function Switch({ checked, onCheckedChange, disabled, label }: SwitchProp
   );
 }
 
-// ============================================================================
-// 10. CHECKBOX
-// ============================================================================
 interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label?: string;
 }
@@ -427,9 +392,6 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
 );
 Checkbox.displayName = 'Checkbox';
 
-// ============================================================================
-// 11. RADIO GROUP
-// ============================================================================
 interface RadioOption {
   value: string;
   label: string;
@@ -466,9 +428,6 @@ export function RadioGroup({ name, options, value, onChange, label }: RadioGroup
   );
 }
 
-// ============================================================================
-// 12. TABS (untuk sub-navigasi)
-// ============================================================================
 interface TabItem {
   id: string;
   label: string;
@@ -505,9 +464,6 @@ export function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
   );
 }
 
-// ============================================================================
-// 13. TOOLTIP (dengan delay)
-// ============================================================================
 interface TooltipProps {
   content: string;
   children: React.ReactNode;
@@ -545,9 +501,6 @@ export function Tooltip({ content, children, delay = 300 }: TooltipProps) {
   );
 }
 
-// ============================================================================
-// 14. PROGRESS BAR
-// ============================================================================
 interface ProgressBarProps {
   value: number;
   max?: number;
@@ -574,9 +527,6 @@ export function ProgressBar({ value, max = 100, showLabel, className }: Progress
   );
 }
 
-// ============================================================================
-// 15. SCORE CHIP
-// ============================================================================
 interface ScoreChipProps {
   score: number;
   size?: 'sm' | 'md';
@@ -602,9 +552,6 @@ export function ScoreChip({ score, size = 'md' }: ScoreChipProps) {
   );
 }
 
-// ============================================================================
-// 16. AVATAR
-// ============================================================================
 interface AvatarProps {
   src?: string;
   name?: string;
@@ -638,9 +585,6 @@ export function Avatar({ src, name, size = 'md', fallback }: AvatarProps) {
   );
 }
 
-// ============================================================================
-// 17. KBD (keyboard shortcut display)
-// ============================================================================
 export function Kbd({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <kbd
@@ -654,9 +598,6 @@ export function Kbd({ children, className }: { children: React.ReactNode; classN
   );
 }
 
-// ============================================================================
-// 18. TABLE (responsive wrapper)
-// ============================================================================
 export function Table({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className="overflow-x-auto">
@@ -665,9 +606,6 @@ export function Table({ children, className }: { children: React.ReactNode; clas
   );
 }
 
-// ============================================================================
-// 19. ALERT (inline notification)
-// ============================================================================
 interface AlertProps {
   variant?: 'info' | 'success' | 'warning' | 'error';
   title?: string;
@@ -696,9 +634,6 @@ export function Alert({ variant = 'info', title, children, onClose }: AlertProps
   );
 }
 
-// ============================================================================
-// 20. SPINNER & SKELETON (dari kedua versi)
-// ============================================================================
 export function Spinner({ size = 20, className }: { size?: number; className?: string }) {
   return (
     <svg
@@ -732,9 +667,6 @@ export function Skeleton({ className, lines = 1 }: { className?: string; lines?:
   );
 }
 
-// ============================================================================
-// 21. DIVIDER
-// ============================================================================
 export function Divider({ label, className }: { label?: string; className?: string }) {
   return (
     <div className={cn('flex items-center gap-3 my-4', className)}>
@@ -745,9 +677,6 @@ export function Divider({ label, className }: { label?: string; className?: stri
   );
 }
 
-// ============================================================================
-// 22. SVG DEFS (untuk gradient dll)
-// ============================================================================
 export function SVGDefs() {
   return (
     <svg width="0" height="0" className="absolute pointer-events-none">
@@ -766,7 +695,4 @@ export function SVGDefs() {
   );
 }
 
-// ============================================================================
-// 23. RE-EXPORT SEMUA KOMPONEN (untuk kemudahan import)
-// ============================================================================
 export type { ButtonVariant, ButtonSize, BadgeVariant, ModalProps, InputProps, SelectProps, SwitchProps, CheckboxProps, RadioGroupProps, TabsProps, TooltipProps, ProgressBarProps, ScoreChipProps, AvatarProps, AlertProps };
