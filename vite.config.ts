@@ -59,7 +59,7 @@ export default defineConfig(({ mode }) => {
           background_color: '#0D0D0D',
           display: 'standalone',
           orientation: 'portrait-primary',
-          start_url: '/',
+          start_url: '/Test-web01/',
           categories: ['business', 'productivity', 'hr'],
           icons: [
             { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -90,8 +90,8 @@ export default defineConfig(({ mode }) => {
       process.env.VISUALIZE === 'true' && visualizer({ open: true, gzipSize: true, brotliSize: true }) as PluginOption,
       isProd && legacy({ targets: ['defaults', 'not IE 11'], modernPolyfills: true }),
       isProd && env.SENTRY_AUTH_TOKEN && sentryVitePlugin({
-        org: "pulse-org", // Ganti dengan org Sentry nanti
-        project: "pulse-hiring-intelligence", // Ganti dengan project Sentry nanti
+        org: "pulse-org",
+        project: "pulse-hiring-intelligence",
         authToken: env.SENTRY_AUTH_TOKEN,
         telemetry: false,
       }),
