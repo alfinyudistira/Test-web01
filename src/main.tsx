@@ -292,8 +292,9 @@ function RootApp() {
             <SpeedInsights />
           </>
         )}
+        
+        <Devtools />
       </QueryClientProvider>
-      <Devtools />
     </ReduxProvider>
   );
 }
