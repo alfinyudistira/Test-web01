@@ -17,6 +17,7 @@ import { liveService } from '@/lib/liveService';
 import { db } from '@/lib/idb';
 import type { AppEvent, EventType, Candidate, PlatformConfig } from '@/types';
 import { isEqual } from 'lodash-es';
+import { toast } from 'sonner';
 
 export { useDebouncedValue };
 
@@ -36,7 +37,16 @@ export function useLiveEvent<T = unknown>(
   }, [type]);
 }
 
-// PERBAIKAN: Tipe key diperjelas agar sesuai dengan logika percabangan IDB
+export function useToast() {
+  return {
+    toast,
+    success: (msg: string, options?: any) => toast.success(msg, options),
+    error: (msg: string, options?: any) => toast.error(msg, options),
+    warning: (msg: string, options?: any) => toast.warning(msg, options),
+    info: (msg: string, options?: any) => toast.info(msg, options),
+  };
+}
+
 export function useEnterpriseStorage<T>(key: 'candidates' | 'config', initialValue: T) {
   const [data, setData] = useState<T>(initialValue);
   const [isLoading, setIsLoading] = useState(true);
