@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // Internal Systems
 import { useAppDispatch, useAppSelector } from '@/store/reduxStore';
-import { generateAISummary } from '@/store/pipelineSlice';
 import { useConfig } from '@/store/appStore';
 import { useHaptic, useCopyToClipboard, useKeyboardShortcuts, useLocalStorage, useToast } from '@/hooks';
 import { cn, exportCsv } from '@/lib/utils';
@@ -12,7 +11,6 @@ import {
   Input, ProgressBar, Tooltip, Kbd, Alert
 } from '@/components/ui';
 
-// FIX 1: Buat interface khusus agar tidak pakai tipe "any"
 export interface CompetencyData {
   id: string;
   label: string;
@@ -33,7 +31,6 @@ const INTERVIEW_ROUNDS = [
 
 const STORAGE_KEY = 'pulse_scorecard_drafts';
 
-// ── UI Component: Intelligent Note Field (Enhanced) ──────────────────────
 interface IntelligentNoteFieldProps {
   competency: CompetencyData; // FIX 2: Terapkan interface di sini
   score: number;
