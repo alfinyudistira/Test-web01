@@ -1,8 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   PULSE COMMAND CENTER — ENTERPRISE APP SHELL v2.0
-   Lazy modules | Scroll memory | Preload on hover | Glass header | Key hints
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 import { Suspense, lazy, useCallback, useMemo, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -14,9 +9,6 @@ import { ModuleErrorBoundary } from '@/components/ErrorBoundary';
 import { cn } from '@/lib/utils';
 import type { TabId } from '@/types';
 
-// ============================================================================
-// 1. LAZY LOADER WITH PRELOAD (dari Versi B, ditingkatkan)
-// ============================================================================
 type LazyComponent<T extends React.ComponentType<any>> = T & { preload?: () => void };
 
 function lazyWithPreload<T extends React.ComponentType<any>>(
@@ -55,9 +47,6 @@ export function preloadAllModules() {
   Object.values(MODULE_MAP).forEach((mod: any) => mod.preload?.());
 }
 
-// ============================================================================
-// 2. SKELETON LOADER (Mewah, dari Versi A)
-// ============================================================================
 function ModuleSkeleton() {
   return (
     <div className="max-w-[1440px] mx-auto space-y-8 animate-in fade-in duration-500">
@@ -75,9 +64,6 @@ function ModuleSkeleton() {
   );
 }
 
-// ============================================================================
-// 3. APP HEADER (dari Versi A + B, ditingkatkan)
-// ============================================================================
 function AppHeader() {
   const { t } = useTranslation();
   const config = useConfig();
@@ -198,9 +184,6 @@ function KeyHints() {
   );
 }
 
-// ============================================================================
-// 5. MAIN APP SHELL
-// ============================================================================
 export function AppShell() {
   const activeTab = useActiveTab();
   const setShowApp = useAppStore((s) => s.setShowApp);
