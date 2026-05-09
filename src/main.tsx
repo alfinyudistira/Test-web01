@@ -18,7 +18,6 @@ import { useAppStore, useConfig } from '@/store/appStore';
 import { initIDB } from '@/lib/idb';
 import { liveService } from '@/lib/liveService';
 import { preloadAllModules } from '@/components/AppShell';
-import { haptic } from '@/lib/utils';
 
 // ── Global UI Components ──
 import { AppErrorBoundary } from '@/components/ErrorBoundary';
@@ -26,11 +25,14 @@ import { ToastContainer } from '@/components/Toast';
 import { Confetti } from '@/components/Confetti';
 import { SVGDefs } from '@/components/ui';
 
+// ── Hero (landing page) ──
+import { Hero } from '@/components/Hero';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,           // 5 minutes
-      gcTime: 1000 * 60 * 30,             // 30 minutes garbage collection
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 30,
       retry: (failureCount, error: any) => {
         if (error?.status === 404) return false;
         return failureCount < 2;
@@ -93,14 +95,6 @@ const detectInitialLanguage = (): LanguageCode => {
 
 const initialLang = detectInitialLanguage();
 applyDirectionAndLang(initialLang);
-
-window.onerror = (message, source, lineno, colno, error) => {
-  alert(`💥 ERROR BANG!\n${message}\n\nLokasi: Baris ${lineno}`);
-};
-
-window.onunhandledrejection = (event) => {
-  alert(`💥 PROMISE ERROR!\n${event.reason}`);
-};
 
 if ('PerformanceObserver' in window) {
   try {
@@ -187,7 +181,9 @@ function LoadingSplash() {
 function RootApp() {
   const [isReady, setIsReady] = useState(false);
   const [bootstrapError, setBootstrapError] = useState<Error | null>(null);
-  const showApp = useAppStore((s) => s.showApp); 
+
+  // showApp dari appStore — Hero vs AppShell
+  const showApp = useAppStore((s) => s.isAppReady && s.showApp === true);
   const config = useConfig();
   useDynamicTheme(config.branding.primaryColor);
 
@@ -201,8 +197,8 @@ function RootApp() {
         await useAppStore.getState().bootstrap();
         
         liveService.connect({
-          baseUrl: import.meta.env['VITE_WS_URL'] || 'wss://api.pulse.app/live',
-          enableMock: import.meta.env.DEV,
+          baseUrl: import.meta.env['VITE_WS_URL'] || '',
+          enableMock: true,
           debug: import.meta.env.DEV,
         });
 
@@ -219,7 +215,7 @@ function RootApp() {
     return () => { mounted = false; };
   }, []);
 
-  // ── Devtools Memo dari App.tsx ──
+  // ── Devtools ──
   const Devtools = useMemo(() => {
     if (import.meta.env.DEV) {
       const DevtoolsComponent = React.lazy(() =>
@@ -253,32 +249,28 @@ function RootApp() {
   if (!isReady) {
     return <LoadingSplash />;
   }
+
   return (
     <ReduxProvider store={reduxStore}>
       <QueryClientProvider client={queryClient}>
         <AppErrorBoundary>
           <ModuleErrorBoundary moduleName="Root" variant="full-page">
-            
+
             <AnimatePresence mode="wait">
               {showApp ? (
+                // ── APP SHELL (setelah user klik Launch) ──
                 <Suspense fallback={<LoadingSplash />}>
                   <AppShell />
                 </Suspense>
               ) : (
-                <div className="flex items-center justify-center min-h-screen text-white">
-                   <button 
-                     onClick={() => useAppStore.getState().setShowApp(true)}
-                     className="px-8 py-4 bg-pulse-gold text-black font-bold rounded-full hover:scale-105 transition-transform"
-                   >
-                     ENTER PULSE IQ
-                   </button>
-                </div>
+                // ── HERO (landing page utama) ──
+                <Hero />
               )}
             </AnimatePresence>
 
           </ModuleErrorBoundary>
         </AppErrorBoundary>
-        
+
         <ToastContainer position="bottom-center" stackDirection="column-reverse" />
         <Confetti type="full" duration={4000} />
         <SVGDefs />
@@ -289,7 +281,7 @@ function RootApp() {
             <SpeedInsights />
           </>
         )}
-        
+
         <Devtools />
       </QueryClientProvider>
     </ReduxProvider>
@@ -299,6 +291,7 @@ function RootApp() {
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Root element #root not found');
 
+// Set CSS var dari config branding
 const config = useAppStore.getState().config;
 if (config?.branding?.primaryColor) {
   document.documentElement.style.setProperty('--primary', config.branding.primaryColor);
