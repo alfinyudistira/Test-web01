@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
-  <link rel="stylesheet" href="/src/index.css" />
   <head>
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
     <meta charset="UTF-8" />
-    
+
     <base href="/Test-web01/" />
 
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -16,7 +14,7 @@
     <meta name="color-scheme" content="dark light" />
     <meta name="generator" content="Pulse Enterprise Framework - Vite 8 + React 19" />
 
-    <title>%VITE_APP_NAME% — Enterprise Talent Acquisition Platform</title>
+    <title>Pulse Hiring Intelligence — Enterprise Talent Acquisition Platform</title>
     <meta name="description" content="Science-backed, bias-free hiring decisions for global enterprises. Fit scoring, funnel analytics, D&I dashboard, executive BI." />
     <meta name="keywords" content="hiring platform, talent acquisition, HR analytics, AI hiring, fit calculator, SaaS, enterprise HR" />
     <meta name="author" content="Alfin Yudistira" />
@@ -95,49 +93,64 @@
       }
     </style>
 
+    <!-- vConsole: HANYA aktif di localhost/development, TIDAK di production/GitHub Pages -->
     <script>
-      window.onerror = function(msg, url, line, col, error) {
-        var errDiv = document.createElement('div');
-        errDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:red;color:white;z-index:999999;padding:15px;font-size:12px;word-break:break-all;';
-        errDiv.innerHTML = '<b>💥 RUNTIME ERROR:</b><br/>' + msg + '<br/>Line: ' + line;
-        document.body.appendChild(errDiv);
-      };
-      window.addEventListener('unhandledrejection', function(e) {
-        var errDiv = document.createElement('div');
-        errDiv.style.cssText = 'position:fixed;top:80px;left:0;width:100%;background:darkred;color:white;z-index:999999;padding:15px;font-size:12px;word-break:break-all;';
-        errDiv.innerHTML = '<b>💥 PROMISE ERROR:</b><br/>' + (e.reason ? e.reason.message || e.reason : 'Unknown');
-        document.body.appendChild(errDiv);
-      });
+      (function() {
+        var isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+        if (isLocal) {
+          var s = document.createElement('script');
+          s.src = 'https://unpkg.com/vconsole@latest/dist/vconsole.min.js';
+          s.onload = function() { window.vConsole = new window.VConsole(); };
+          document.head.appendChild(s);
+        }
+      })();
+    </script>
+
+    <!-- Error overlay: hanya di localhost -->
+    <script>
+      (function() {
+        var isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+        if (!isLocal) return;
+        window.onerror = function(msg, url, line) {
+          var errDiv = document.createElement('div');
+          errDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:red;color:white;z-index:999999;padding:15px;font-size:12px;word-break:break-all;';
+          errDiv.innerHTML = '<b>RUNTIME ERROR:</b><br/>' + msg + '<br/>Line: ' + line;
+          document.body.appendChild(errDiv);
+        };
+        window.addEventListener('unhandledrejection', function(e) {
+          var errDiv = document.createElement('div');
+          errDiv.style.cssText = 'position:fixed;top:80px;left:0;width:100%;background:darkred;color:white;z-index:999999;padding:15px;font-size:12px;word-break:break-all;';
+          errDiv.innerHTML = '<b>PROMISE ERROR:</b><br/>' + (e.reason ? e.reason.message || e.reason : 'Unknown');
+          document.body.appendChild(errDiv);
+        });
+      })();
     </script>
   </head>
 
   <body>
-    <div id="root" role="application" aria-label="%VITE_APP_NAME%"></div>
+    <div id="root" role="application" aria-label="Pulse Hiring Intelligence"></div>
 
     <div id="app-loader" aria-hidden="true">
       <div class="pulse-ring"></div>
       <div class="loader-text">Initializing Engine...</div>
     </div>
 
-    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
-    <script>var vConsole = new window.VConsole();</script>
-
     <script type="module" src="/src/main.tsx"></script>
 
     <script>
       window.removePulseLoader = function() {
-        const loader = document.getElementById('app-loader');
+        var loader = document.getElementById('app-loader');
         if (loader) {
           loader.style.opacity = '0';
-          setTimeout(() => {
+          setTimeout(function() {
             if (loader.parentNode) loader.remove();
           }, 500); 
         }
       };
       
-      setTimeout(() => {
+      setTimeout(function() {
         if (document.getElementById('app-loader')) {
-          console.warn('⚠️ Failsafe triggered: React rendering timeout.');
+          console.warn('Failsafe triggered: React rendering timeout.');
           window.removePulseLoader();
         }
       }, 6000);
