@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools, persist, subscribeWithSelector, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import { useShallow } from 'zustand/react/shallow'; // Upgrade ke Zustand v5 API
+import { useShallow } from 'zustand/react/shallow';
 import type {
   PlatformConfig,
   AppStats,
@@ -16,7 +16,7 @@ import type {
 } from '@/types';
 import { DEFAULT_CONFIG, mergeConfig, validateConfig } from '@/lib/defaultConfig';
 import { db } from '@/lib/idb';
-import { computeWeightedScore, uid, safeParseJSON, isResultOk } from '@/lib/utils'; // Integrasi utilitas
+import { computeWeightedScore, uid, safeParseJSON, isResultOk } from '@/lib/utils';
 
 const STORE_NAME = 'pulse-enterprise-store-v2';
 const MAX_LIVE_EVENTS = 50;
@@ -32,7 +32,6 @@ const INITIAL_STATS: AppStats = {
   lastUpdated: new Date().toISOString() as any,
 };
 
-// Helper
 function computeStatsFromCandidates(candidates: Candidate[], config: PlatformConfig): AppStats {
   const scores = candidates
     .map(c => c.weightedScore ?? 0)
@@ -63,6 +62,9 @@ interface AppState {
   isSidebarOpen: boolean;
   currentOrgId?: OrganizationId;
 
+  // ── PENTING: showApp mengontrol Hero vs AppShell ──
+  showApp: boolean;
+
   // Core Data
   config: PlatformConfig;
   candidates: Candidate[];
@@ -72,8 +74,8 @@ interface AppState {
   notifications: ToastPayload[];
   liveLog: AppEvent<JSONValue>[];
   confettiTrigger: number;
-  onboardingChecked: Record<string, boolean>;
   showConfetti?: boolean;
+  onboardingChecked: Record<string, boolean>;
 }
 
 interface AppActions {
@@ -84,6 +86,9 @@ interface AppActions {
   // Navigation
   setActiveTab: (tab: TabId) => void;
   toggleSidebar: () => void;
+
+  // ── PENTING: toggle Hero/AppShell ──
+  setShowApp: (show: boolean) => void;
 
   // Config
   updateConfig: (patch: Partial<PlatformConfig>) => Promise<void>;
@@ -97,6 +102,7 @@ interface AppActions {
 
   // Stats
   refreshStats: () => void;
+  resetStats: () => void;
 
   // Toast
   addToast: (toast: Omit<ToastPayload, 'id'>) => string;
@@ -125,13 +131,15 @@ export const useAppStore = create<AppStore>()(
           // ──────────────────────────────────────────────────────────────
           activeTab: 'calculator',
           isAppReady: false,
-           isSidebarOpen: true,
-           config: DEFAULT_CONFIG,
+          isSidebarOpen: true,
+          showApp: false,            // ← default false = tampilkan Hero dulu
+          config: DEFAULT_CONFIG,
           candidates: [],
           stats: INITIAL_STATS,
           notifications: [],
           liveLog: [],
           confettiTrigger: 0,
+          showConfetti: false,
           onboardingChecked: {},
 
           // ──────────────────────────────────────────────────────────────
@@ -185,6 +193,11 @@ export const useAppStore = create<AppStore>()(
           // ──────────────────────────────────────────────────────────────
           setActiveTab: (tab) => set(state => { state.activeTab = tab; }),
           toggleSidebar: () => set(state => { state.isSidebarOpen = !state.isSidebarOpen; }),
+
+          // ──────────────────────────────────────────────────────────────
+          // SHOW APP TOGGLE (Hero ↔ AppShell)
+          // ──────────────────────────────────────────────────────────────
+          setShowApp: (show) => set(state => { state.showApp = show; }),
 
           // ──────────────────────────────────────────────────────────────
           // CONFIG
@@ -262,11 +275,19 @@ export const useAppStore = create<AppStore>()(
             set(state => { state.stats = newStats; });
           },
 
+          resetStats: () => {
+            set(state => {
+              state.candidates = [];
+              state.stats = INITIAL_STATS;
+            });
+            db.candidates.clear().catch(console.error);
+          },
+
           // ──────────────────────────────────────────────────────────────
           // TOAST
           // ──────────────────────────────────────────────────────────────
           addToast: (toast) => {
-            const id = `toast-${uid()}`; // Menggunakan fungsi uid() enterprise kita
+            const id = `toast-${uid()}`;
             set(state => {
               state.notifications.push({ ...toast, id });
               if (state.notifications.length > MAX_TOASTS) state.notifications.shift();
@@ -331,6 +352,7 @@ export const useAppStore = create<AppStore>()(
             isSidebarOpen: state.isSidebarOpen,
             onboardingChecked: state.onboardingChecked,
             currentOrgId: state.currentOrgId,
+            // showApp tidak di-persist: tiap refresh selalu mulai dari Hero
           }),
           storage: createJSONStorage(() => localStorage),
           migrate: (persistedState: unknown, version) => {
@@ -381,7 +403,6 @@ import { liveService } from '@/lib/liveService';
 
 export function useLiveEventSync() {
   useEffect(() => {
-    // Action dipanggil via getState agar aman di dalam useEffect
     const { ingestLiveEvent } = useAppStore.getState();
     const unsub = liveService.subscribe('*', (event) => {
       ingestLiveEvent(event);
